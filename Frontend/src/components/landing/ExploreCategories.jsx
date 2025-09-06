@@ -1,6 +1,14 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const ExploreCategories = () => {
+  const navigate = useNavigate();
+
+  const handleCategoryClick = (categoryName) => {
+    // Navigate to all products page with category filter
+    navigate(`/products?category=${encodeURIComponent(categoryName)}`);
+  };
+
   const categories = [
     {
       id: 1,
@@ -45,7 +53,7 @@ const ExploreCategories = () => {
   ];
 
   return (
-    <section className="py-16 bg-gray-50">
+    <section id="explore-categories" className="py-16 bg-gray-50 scroll-mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-12">
@@ -62,6 +70,7 @@ const ExploreCategories = () => {
           {categories.map((category) => (
             <div
               key={category.id}
+              onClick={() => handleCategoryClick(category.name)}
               className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${category.bgColor} ${category.hoverColor} 
                          p-6 md:p-8 text-center cursor-pointer transform transition-all duration-300 
                          hover:scale-105 hover:shadow-2xl hover:-translate-y-2`}
@@ -100,13 +109,14 @@ const ExploreCategories = () => {
 
         {/* View All Categories Button */}
         <div className="text-center mt-12">
-          <button className="inline-flex items-center px-8 py-3 bg-[#782355] text-white font-semibold rounded-xl hover:bg-[#8e2a63] transition-all duration-300 transform hover:scale-105 hover:shadow-lg">
-            <span>View All Categories</span>
-            <svg className="ml-2 w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+          <button
+            onClick={() => navigate('/products')}
+            className="bg-[#782355] text-white px-8 py-3 rounded-2xl font-semibold hover:bg-[#8e2a63] transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+          >
+            View All Products
           </button>
         </div>
+      
       </div>
     </section>
   );

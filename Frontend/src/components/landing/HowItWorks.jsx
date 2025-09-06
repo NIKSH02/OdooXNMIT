@@ -3,10 +3,15 @@ import {
   UserPlusIcon, 
   MagnifyingGlassIcon, 
   ShoppingBagIcon, 
-  ChatBubbleLeftRightIcon 
+  ShoppingCartIcon 
 } from '@heroicons/react/24/outline';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 const HowItWorks = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  
   const steps = [
     {
       id: 1,
@@ -26,9 +31,9 @@ const HowItWorks = () => {
     },
     {
       id: 3,
-      icon: ChatBubbleLeftRightIcon,
-      title: "Connect & Negotiate",
-      description: "Connect with sellers, negotiate prices, and arrange secure transactions",
+      icon: ShoppingCartIcon,
+      title: "Add to Cart & Buy",
+      description: "Add items to your cart and complete secure purchases with ease",
       color: "from-yellow-400 to-yellow-600",
       delay: "animate-fade-in-up animation-delay-400"
     },
@@ -64,10 +69,11 @@ const HowItWorks = () => {
             {steps.map((step, index) => (
               <div
                 key={step.id}
-                className={`relative group ${step.delay}`}
+                className={`relative group flex flex-col h-full ${step.delay}`}
+                style={{ minHeight: '370px' }}
               >
                 {/* Step Card */}
-                <div className="bg-white rounded-3xl p-6 md:p-8 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 border border-gray-100">
+                <div className="flex flex-col h-full bg-white rounded-3xl p-6 md:p-8 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 border border-gray-100 w-full min-w-[250px] max-w-[320px] mx-auto" style={{ minHeight: '370px' }}>
                   {/* Step Number */}
                   <div className="absolute -top-4 left-6">
                     <div className="w-8 h-8 bg-[#782355] text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
@@ -84,7 +90,7 @@ const HowItWorks = () => {
                   <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 group-hover:text-[#782355] transition-colors duration-300">
                     {step.title}
                   </h3>
-                  <p className="text-gray-600 text-sm md:text-base leading-relaxed">
+                  <p className="text-gray-600 text-sm md:text-base leading-relaxed flex-1">
                     {step.description}
                   </p>
 
@@ -107,25 +113,33 @@ const HowItWorks = () => {
           </div>
         </div>
 
-        {/* Call to Action */}
-        <div className="text-center mt-16">
-          <div className="bg-gradient-to-r from-[#782355] to-purple-600 rounded-3xl p-8 md:p-12 text-white">
-            <h3 className="text-2xl md:text-3xl font-bold mb-4">
-              Ready to Get Started?
-            </h3>
-            <p className="text-lg md:text-xl mb-8 opacity-90">
-              Join thousands of users who are already making a difference
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="bg-white text-[#782355] px-8 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors duration-200 transform hover:scale-105">
-                Sign Up Now
-              </button>
-              <button className="border-2 border-white text-white px-8 py-3 rounded-xl font-semibold hover:bg-white hover:text-[#782355] transition-all duration-200 transform hover:scale-105">
-                Learn More
-              </button>
+        {/* Call to Action - Only show if user is not authenticated */}
+        {!isAuthenticated && (
+          <div className="text-center mt-16">
+            <div className="bg-gradient-to-r from-[#782355] to-purple-600 rounded-3xl p-8 md:p-12 text-white">
+              <h3 className="text-2xl md:text-3xl font-bold mb-4">
+                Ready to Get Started?
+              </h3>
+              <p className="text-lg md:text-xl mb-8 opacity-90">
+                Join thousands of users who are already making a difference
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button 
+                  onClick={() => navigate('/authpage')}
+                  className="bg-white text-[#782355] px-8 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors duration-200 transform hover:scale-105"
+                >
+                  Sign Up Now
+                </button>
+                <button 
+                  onClick={() => navigate('/products')}
+                  className="border-2 border-white text-white px-8 py-3 rounded-xl font-semibold hover:bg-white hover:text-[#782355] transition-all duration-200 transform hover:scale-105"
+                >
+                  Learn More
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   );

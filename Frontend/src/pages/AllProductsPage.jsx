@@ -6,7 +6,7 @@ import {
   ChevronDownIcon,
   ChevronLeftIcon 
 } from '@heroicons/react/24/outline';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import ProductCard from '../components/landing/ProductCard';
 import productService from '../services/productService';
 import { useRetry } from '../hooks/useUtils';
@@ -15,7 +15,13 @@ import Navbar from '../components/landing/Navbar';
 import Footer from '../components/landing/Footer';
 
 const AllProductsPage = () => {
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [searchParams] = useSearchParams();
+
+  
+  // Get category from URL params
+  const categoryFromUrl = searchParams.get('category');
+  
+  const [selectedCategory, setSelectedCategory] = useState(categoryFromUrl || 'All');
   const [selectedCondition, setSelectedCondition] = useState('All');
   const [priceRange, setPriceRange] = useState([0, 200000]);
   const [selectedLocation, setSelectedLocation] = useState('All');
