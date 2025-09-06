@@ -919,12 +919,33 @@ const AddItemPage = () => {
       <Navbar />
       
       {/* Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-2 text-gray-600 hover:text-[#782355] transition-colors rounded-lg hover:bg-gray-100"
+            >
+              <ChevronLeftIcon className="h-5 w-5 md:h-6 md:w-6" />
+            </button>
+            <div>
+              <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-gray-900">
+                Add New Item
+              </h1>
+              <p className="text-sm text-gray-600 mt-1">
+                List your item for others to find and purchase
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
   
 
       {/* Progress Steps */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
+          {/* Desktop Progress Steps */}
+          <div className="hidden md:flex items-center justify-between">
             {[1, 2, 3, 4].map((step) => (
               <div key={step} className="flex items-center">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
@@ -950,25 +971,51 @@ const AddItemPage = () => {
               </div>
             ))}
           </div>
+          
+          {/* Mobile Progress Steps */}
+          <div className="md:hidden">
+            <div className="flex items-center justify-center mb-2">
+              <span className="text-[#782355] font-medium text-sm">
+                Step {currentStep} of 4
+              </span>
+            </div>
+            <div className="flex items-center justify-center">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium bg-[#782355] text-white mr-2`}>
+                {currentStep}
+              </div>
+              <span className="text-sm text-[#782355] font-medium">
+                {currentStep === 1 && 'Basic Info'}
+                {currentStep === 2 && 'Details'}
+                {currentStep === 3 && 'Images & Location'}
+                {currentStep === 4 && 'Contact & Review'}
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+              <div 
+                className="bg-[#782355] h-2 rounded-full transition-all duration-300" 
+                style={{ width: `${(currentStep / 4) * 100}%` }}
+              ></div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Form Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
-          <form onSubmit={handleSubmit} className="p-6 md:p-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
+        <div className="bg-white rounded-lg md:rounded-2xl shadow-sm border border-gray-200">
+          <form onSubmit={handleSubmit} className="p-4 md:p-6 lg:p-8">
             {currentStep === 1 && renderStep1()}
             {currentStep === 2 && renderStep2()}
             {currentStep === 3 && renderStep3()}
             {currentStep === 4 && renderStep4()}
 
             {/* Navigation Buttons */}
-            <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
+            <div className="flex flex-col sm:flex-row justify-between gap-4 mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-200">
               <button
                 type="button"
                 onClick={prevStep}
                 disabled={currentStep === 1}
-                className={`px-6 py-3 rounded-xl font-medium transition-colors duration-200 ${
+                className={`w-full sm:w-auto px-4 md:px-6 py-3 rounded-lg md:rounded-xl font-medium transition-colors duration-200 ${
                   currentStep === 1
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -981,7 +1028,7 @@ const AddItemPage = () => {
                 <button
                   type="button"
                   onClick={nextStep}
-                  className="px-6 py-3 bg-[#782355] text-white rounded-xl font-medium hover:bg-[#8e2a63] transition-colors duration-200"
+                  className="w-full sm:w-auto px-4 md:px-6 py-3 bg-[#782355] text-white rounded-lg md:rounded-xl font-medium hover:bg-[#8e2a63] transition-colors duration-200"
                 >
                   Next
                 </button>
@@ -989,7 +1036,7 @@ const AddItemPage = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`px-8 py-3 rounded-xl font-medium transition-colors duration-200 ${
+                  className={`w-full sm:w-auto px-6 md:px-8 py-3 rounded-lg md:rounded-xl font-medium transition-colors duration-200 ${
                     isSubmitting
                       ? 'bg-gray-400 text-white cursor-not-allowed'
                       : 'bg-[#782355] text-white hover:bg-[#8e2a63]'
@@ -1006,33 +1053,35 @@ const AddItemPage = () => {
       {/* Location Modal */}
       {showLocationModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-gray-900">Select Location</h3>
+          <div className="bg-white rounded-lg md:rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            <div className="p-4 md:p-6 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-lg md:text-xl font-bold text-gray-900">Select Location</h3>
               <button
                 onClick={closeLocationModal}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-gray-600 transition-colors p-1"
               >
-                <XMarkIcon className="h-6 w-6" />
+                <XMarkIcon className="h-5 w-5 md:h-6 md:w-6" />
               </button>
             </div>
             
-            <div className="p-6">
+            <div className="p-4 md:p-6">
               <div
                 ref={mapContainer}
-                className="w-full h-96 rounded-xl"
-                style={{ minHeight: '400px' }}
+                className="w-full h-64 md:h-96 rounded-lg border border-gray-200"
               />
               
-              <div className="mt-4 flex justify-between items-center">
-                <div className="text-sm text-gray-600">
-                  Search for a location or click on the map to select
-                </div>
+              <div className="mt-4 flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={closeLocationModal}
-                  className="bg-[#782355] text-white px-6 py-2 rounded-lg hover:bg-[#8e2a63] transition-colors"
+                  className="w-full sm:w-auto px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
                 >
-                  Done
+                  Cancel
+                </button>
+                <button
+                  onClick={closeLocationModal}
+                  className="w-full sm:w-auto px-4 py-2 bg-[#782355] text-white rounded-lg hover:bg-[#8e2a63] transition-colors"
+                >
+                  Confirm Location
                 </button>
               </div>
             </div>
