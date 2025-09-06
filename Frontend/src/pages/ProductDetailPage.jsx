@@ -1,19 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon, StarIcon, HeartIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon, StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
-import { MapPinIcon, CalendarIcon, TagIcon, TruckIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { MapPinIcon, CalendarIcon, TagIcon, TruckIcon, ShieldCheckIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
 import { useNavigate, useParams } from 'react-router-dom';
 import productService from '../services/productService';
 import { useRetry } from '../hooks/useUtils';
+import { useCart } from '../hooks/useCart';
+import Navbar from '../components/landing/Navbar';
+import Footer from '../components/landing/Footer';
 
 const ProductDetailPage = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
+
   const { retryCount, canRetry, retry, reset } = useRetry();
   
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
+   const { addToCart } = useCart();
+
+  const handleAddToCart = () => {
+    addToCart(product, selectedQuantity);
+    navigate('/cart');
+  }; 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -122,6 +131,7 @@ const ProductDetailPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+        
       {/* Back Navigation */}
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -311,12 +321,22 @@ const ProductDetailPage = () => {
                 <div className="flex gap-3">
                   <button 
                     disabled={product.quantity === 0}
-                    className="flex-1 bg-[#782355] text-white py-3 px-6 rounded-xl font-semibold hover:bg-[#8e2a63] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    
+                    onClick={handleAddToCart}
+                    className="flex-1 bg-gradient-to-r from-[#782355] to-[#9c3069] text-white py-3 px-6 rounded-xl font-semibold hover:from-[#9c3069] hover:to-[#782355] transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
+                  >
+                    <ShoppingCartIcon className="w-5 h-5" />
+                    Add to Cart
+                  </button>
+                  <button className="flex-1 bg-white text-[#782355] py-3 px-6 rounded-xl font-semibold border-2 border-[#782355] hover:bg-[#782355] hover:text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {product.quantity === 0 ? 'Out of Stock' : 'Send Request'}
                   </button>
-                  <button className="px-4 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors duration-200">
-                    <HeartIcon className="h-6 w-6 text-gray-600" />
+                  <button 
+                    onClick={() => setIsFavorite(!isFavorite)}
+                    className="px-4 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors duration-200"
+                  >
+                    <HeartIcon className={`h-6 w-6 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
                   </button>
                 </div>
               </div>
