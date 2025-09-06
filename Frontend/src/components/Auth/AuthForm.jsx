@@ -140,16 +140,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
         await loginWithPassword(username, password);
         // Login successful - show success message with redirect callback
         onSuccess?.(
-          "login",
-          "🚀 Welcome Back!",
-          `Great to see you again, ${username}! You have successfully logged into your account.`,
-          () => {
-            // Add a small delay to ensure AuthContext has updated
-            setTimeout(() => {
-              navigate("/");
-            }, 100);
-          }
-        );
+          navigate("/"))
       } catch (error) {
         console.error("Login failed:", error);
       }

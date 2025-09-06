@@ -8,6 +8,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import ProductCard from '../components/landing/ProductCard';
+import Navbar from '../components/landing/Navbar';
+import Footer from '../components/landing/Footer';
 
 const AllProductsPage = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -192,7 +194,9 @@ const AllProductsPage = () => {
   };
 
   return (
+    
     <div className="min-h-screen bg-gray-50">
+        <Navbar />
       {/* Header */}
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
