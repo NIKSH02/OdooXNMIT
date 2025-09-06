@@ -21,6 +21,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
     isEmailVerified,
     emailVerificationSent,
     isVerifyingOtp,
+    isLoading: authLoading,
   } = useAuth();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -29,6 +30,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
   const [showPassword, setShowPassword] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [registrationInProgress, setRegistrationInProgress] = useState(false);
+  const [localLoading, setLocalLoading] = useState(false);
 
   let navigate = useNavigate();
 
@@ -136,13 +138,15 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
 
   const handleLoginWithPassword = async () => {
     if (username && password.length >= 1) {
+      setLocalLoading(true);
       try {
         await loginWithPassword(username, password);
-        // Login successful - show success message with redirect callback
-        onSuccess?.(
-          navigate("/"))
+        // Login successful - redirect to home
+        navigate("/");
       } catch (error) {
         console.error("Login failed:", error);
+      } finally {
+        setLocalLoading(false);
       }
     }
   };
@@ -174,6 +178,9 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
     email &&
     email.includes("@");
   const isSigninEnabled = isLogin ? username && password.length >= 1 : false;
+
+  // Determine if we should show loading state
+  const isLoading = authLoading || localLoading;
 
   return (
     <div className="bg-white shadow-lg rounded-xl p-6 md:p-8 w-full max-w-md border border-orange-100">
@@ -375,15 +382,22 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
       {/* Submit Button - only show if not in email verification flow or if login */}
       {(isLogin || !registrationInProgress) && (
         <button
-          disabled={isLogin ? !isSigninEnabled : !isSignupEnabled}
+          disabled={isLoading || (isLogin ? !isSigninEnabled : !isSignupEnabled)}
           onClick={isLogin ? handleLoginWithPassword : handleSignup}
-          className={`w-full py-3 rounded-lg transition font-medium ${
-            (isLogin ? isSigninEnabled : isSignupEnabled)
+          className={`w-full py-3 rounded-lg transition font-medium flex items-center justify-center gap-2 ${
+            (isLogin ? isSigninEnabled : isSignupEnabled) && !isLoading
               ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 transform hover:scale-[1.02]"
               : "bg-gray-300 text-gray-500 cursor-not-allowed"
           }`}
         >
-          {isLogin ? "Sign in" : "Sign up"}
+          {isLoading ? (
+            <>
+              <FaSpinner className="animate-spin" />
+              {isLogin ? "Signing in..." : "Signing up..."}
+            </>
+          ) : (
+            isLogin ? "Sign in" : "Sign up"
+          )}
         </button>
       )}
 
@@ -404,6 +418,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
           onClick={handleToggleAuth}
           className="text-orange-600 hover:text-orange-800 font-medium hover:underline disabled:text-gray-400 disabled:cursor-not-allowed"
           disabled={
+            isLoading ||
             isVerifyingOtp ||
             (registrationInProgress &&
               emailVerificationSent &&
