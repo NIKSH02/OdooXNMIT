@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   PencilIcon, 
   CameraIcon, 
@@ -10,27 +10,28 @@ import {
   CalendarIcon,
   BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
+import { userService } from '../../services/userService';
 
 const MyProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [profileData, setProfileData] = useState({
-    fullName: 'Sumesh Yadav',
-    email: 'ysumesh084@gmail.com',
-    phone: '9049374399',
-
-    streetAddress: 'Stybn',
-    city: 'Boisar',
-    state: 'Maharashtra',
-    pincode: '123555',
+    fullName: '',
+    email: '',
+    phone: '',
+    streetAddress: '',
+    city: '',
+    state: '',
+    pincode: '',
     profileImage: null,
-    memberSince: 'July 2025',
-    
-    profileStatus: 'Complete'
+    memberSince: '',
+    profileStatus: 'Incomplete'
   });
 
   const [editData, setEditData] = useState(profileData);
 
-  const statsData = [
+  const [statsData, setStatsData] = useState([
     {
       title: 'Total Revenue',
       value: '₹0',
@@ -49,16 +50,110 @@ const MyProfile = () => {
       color: 'from-purple-400 to-purple-600',
       icon: '💰'
     }
-  ];
+  ]);
+
+  // Fetch user profile data
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch current user data
+        const userResponse = await userService.getCurrentUser();
+        if (userResponse.success) {
+          const user = userResponse.data;
+          setProfileData({
+            fullName: user.fullname || user.name || '',
+            email: user.email || '',
+            phone: user.phone || '',
+            streetAddress: user.address?.street || '',
+            city: user.address?.city || '',
+            state: user.address?.state || '',
+            pincode: user.address?.pincode || '',
+            profileImage: user.avatar || null,
+            memberSince: user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'long' 
+            }) : 'Unknown',
+            profileStatus: user.isProfileComplete ? 'Complete' : 'Incomplete'
+          });
+        }
+        
+        // Fetch financial summary
+        const financialResponse = await userService.getFinancialSummary();
+        if (financialResponse.success) {
+          const financial = financialResponse.data;
+          setStatsData([
+            {
+              title: 'Total Revenue',
+              value: `₹${(financial.totalRevenue || 0).toLocaleString()}`,
+              color: 'from-green-400 to-green-600',
+              icon: '📈'
+            },
+            {
+              title: 'Total Expenditure', 
+              value: `₹${(financial.totalExpenditure || 0).toLocaleString()}`,
+              color: 'from-blue-400 to-blue-600',
+              icon: '📊'
+            },
+            {
+              title: 'Net Profit',
+              value: `₹${((financial.totalRevenue || 0) - (financial.totalExpenditure || 0)).toLocaleString()}`, 
+              color: 'from-purple-400 to-purple-600',
+              icon: '💰'
+            }
+          ]);
+        }
+        
+      } catch (err) {
+        console.error('Error fetching profile data:', err);
+        setError(err.message || 'Failed to load profile data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfileData();
+  }, []);
 
   const handleEdit = () => {
     setIsEditing(true);
     setEditData(profileData);
   };
 
-  const handleSave = () => {
-    setProfileData(editData);
-    setIsEditing(false);
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      
+      // Prepare update data
+      const updateData = {
+        fullname: editData.fullName,
+        phone: editData.phone,
+        address: {
+          street: editData.streetAddress,
+          city: editData.city,
+          state: editData.state,
+          pincode: editData.pincode
+        }
+      };
+      
+      // Update profile using the backend service
+      const response = await userService.updateUserProfile(updateData);
+      
+      if (response.success) {
+        setProfileData(editData);
+        setIsEditing(false);
+        alert('Profile updated successfully!');
+      } else {
+        throw new Error(response.message || 'Failed to update profile');
+      }
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      alert('Failed to update profile: ' + (err.message || 'Unknown error'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCancel = () => {
@@ -86,20 +181,43 @@ const MyProfile = () => {
           <p className="text-gray-600">Manage your account information and preferences</p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {statsData.map((stat, index) => (
-            <div key={index} className={`bg-gradient-to-r ${stat.color} rounded-2xl p-6 text-white`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-white/80 text-sm mb-1">{stat.title}</p>
-                  <p className="text-2xl font-bold">{stat.value}</p>
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#782355]"></div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-6 mb-6">
+            <p className="text-red-600">Error: {error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="mt-3 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* Profile Content */}
+        {!loading && !error && (
+          <>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              {statsData.map((stat, index) => (
+                <div key={index} className={`bg-gradient-to-r ${stat.color} rounded-2xl p-6 text-white`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-white/80 text-sm mb-1">{stat.title}</p>
+                      <p className="text-2xl font-bold">{stat.value}</p>
+                    </div>
+                    <div className="text-3xl">{stat.icon}</div>
+                  </div>
                 </div>
-                <div className="text-3xl">{stat.icon}</div>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
 
         {/* Profile Information */}
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
@@ -324,6 +442,8 @@ const MyProfile = () => {
             </div>
           </div>
         </div>
+          </>
+        )}
       </div>
     </div>
   );

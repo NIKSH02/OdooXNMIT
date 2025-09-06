@@ -10,12 +10,105 @@ import {
   ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 import { useCart } from '../hooks/useCart';
+import { paymentService, openRazorpayCheckout } from '../services/paymentService';
 import Navbar from '../components/landing/Navbar';
 import Footer from '../components/landing/Footer';
 
 const CartPage = () => {
   const navigate = useNavigate();
   const { items: cartItems, updateQuantity, removeFromCart, getCartTotal } = useCart();
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
+  // Handle checkout with Razorpay
+  const handleCheckout = async () => {
+    if (cartItems.length === 0) {
+      alert('Your cart is empty');
+      return;
+    }
+
+    // Prevent double clicking
+    if (isProcessingPayment) {
+      console.log('Payment already in progress, ignoring click');
+      return;
+    }
+
+    setIsProcessingPayment(true);
+
+    try {
+      // Create order in backend
+      const orderData = {
+        items: cartItems.map(item => ({
+          productId: item.id,
+          quantity: item.quantity,
+          price: item.price
+        })),
+        totalAmount: total,
+        currency: 'INR'
+      };
+
+      const orderResponse = await paymentService.createOrder(orderData);
+      
+      if (!orderResponse.success) {
+        throw new Error(orderResponse.message || 'Failed to create order');
+      }
+
+      const { order } = orderResponse.data;
+
+      // Razorpay options
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_U0JVBIF0p05ory',
+        amount: order.amount,
+        currency: order.currency,
+        name: 'OdooXNMIT',
+        description: 'Purchase from Cart',
+        order_id: order.id,
+        handler: async function (response) {
+          try {
+            // Verify payment
+            const verifyResponse = await paymentService.verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              cartItems: cartItems
+            });
+
+            if (verifyResponse.success) {
+              alert('Payment successful! Your order has been placed.');
+              // Clear cart and redirect
+              cartItems.forEach(item => removeFromCart(item.id));
+              navigate('/dashboard/orders-placed');
+            } else {
+              throw new Error('Payment verification failed');
+            }
+          } catch (error) {
+            console.error('Payment verification error:', error);
+            alert('Payment verification failed. Please contact support.');
+          }
+        },
+        prefill: {
+          name: '',
+          email: '',
+          contact: ''
+        },
+        theme: {
+          color: '#782355'
+        },
+        modal: {
+          ondismiss: function() {
+            setIsProcessingPayment(false);
+          }
+        }
+      };
+
+      // Open Razorpay checkout
+      await openRazorpayCheckout(options);
+
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert('Checkout failed: ' + (error.message || 'Unknown error'));
+      setIsProcessingPayment(false);
+    }
+  };
 
 
 
@@ -35,7 +128,7 @@ const CartPage = () => {
       {/* Header */}
      
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl min-h-[75vh] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {cartItems.length === 0 ? (
           // Empty Cart
           <div className="text-center py-16">
@@ -55,8 +148,8 @@ const CartPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Cart Items */}
             <div className="lg:col-span-2 space-y-4">
-              {cartItems.map((item) => (
-                <div key={item.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              {cartItems.map((item, index) => (
+                <div key={item.id || index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                   <div className="flex flex-col sm:flex-row gap-4">
                     {/* Product Image */}
                     <div className="flex-shrink-0">
@@ -75,7 +168,13 @@ const CartPage = () => {
                           <div className="space-y-1 text-sm text-gray-600">
                             <p>Sold by: <span className="font-medium">{item.seller}</span></p>
                             <p>Condition: <span className="font-medium">{item.condition}</span></p>
-                            <p>Location: <span className="font-medium">{item.location}</span></p>
+                            <p>Location: <span className="font-medium">
+                              {typeof item.location === 'object' && item.location?.address 
+                                ? item.location.address 
+                                : typeof item.location === 'string' 
+                                ? item.location 
+                                : 'Location not specified'}
+                            </span></p>
                             <p className={`font-medium ${item.inStock ? 'text-green-600' : 'text-red-600'}`}>
                               {item.inStock ? '✅ In Stock' : '❌ Out of Stock'}
                             </p>
@@ -202,8 +301,12 @@ const CartPage = () => {
                 </div>
 
                 {/* Checkout Button */}
-                <button className="w-full mt-6 bg-[#782355] text-white py-4 rounded-xl font-semibold text-lg hover:bg-[#8e2a63] transition-colors duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
-                  Proceed to Checkout
+                <button 
+                  onClick={handleCheckout}
+                  disabled={isProcessingPayment}
+                  className="w-full mt-6 bg-[#782355] text-white py-4 rounded-xl font-semibold text-lg hover:bg-[#8e2a63] transition-colors duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                >
+                  {isProcessingPayment ? 'Processing...' : 'Proceed to Checkout'}
                 </button>
 
                 {/* Continue Shopping */}

@@ -130,6 +130,7 @@ const negotiationRouter = require("./src/routes/negotiation.route");
 const orderChatRouter = require("./src/routes/orderChat.route");
 const productRouter = require("./src/routes/product.route");
 const cartRouter = require("./src/routes/cart.route");
+const paymentRouter = require("./src/routes/payment.route");
 
 // Import controllers and socket handlers
 const locationChatSocket = require("./src/locationChatSocket.js");
@@ -150,6 +151,7 @@ app.use("/api/products", supplierListingRouter); // Mount the supplier listing (
 app.use("/api/items", productRouter); // Mount the new product router for Sellx items
 app.use("/api/search", searchRouter); // Mount the search router
 app.use("/api/cart", cartRouter); // Mount the cart router
+app.use("/api/payments", paymentRouter); // Mount the payment router
 app.use("/api/samples", sampleRouter); // Mount the sample router
 app.use("/api/analytics", analyticsRouter); // Mount the analytics router
 app.use("/api/orders", orderRouter); // Mount the order router

@@ -1,15 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AdjustmentsHorizontalIcon, FunnelIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import ProductCard from './ProductCard';
+import productService from '../../services/productService';
+import { useRetry } from '../../hooks/useUtils';
+import { useAuth } from '../../hooks/useAuth';
 
 const ExploreItems = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState('featured');
   const [showFilters, setShowFilters] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { retryCount, canRetry, retry, reset } = useRetry();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
-  const categories = ['All', 'Electronics', 'Furniture', 'Fashion', 'Sports', 'Books', 'Bikes'];
+  const categories = [
+    'All', 
+    'Electronics & Appliances', 
+    'Furniture', 
+    'Fashion', 
+    'Books, Sports & Hobbies', 
+    'Bikes',
+    'Mobiles',
+    'Cars'
+  ];
   const sortOptions = [
     { value: 'featured', label: 'Featured' },
     { value: 'price-low', label: 'Price: Low to High' },
@@ -18,119 +35,105 @@ const ExploreItems = () => {
     { value: 'rating', label: 'Highest Rated' }
   ];
 
-  // Sample products data
-  const products = [
-    {
-      id: 1,
-      image: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1464&q=80",
-      title: "iPhone 13 Pro Max",
-      description: "Latest Apple iPhone with advanced camera system and A15 Bionic chip",
-      price: 85000,
-      originalPrice: 95000,
-      condition: "Like New",
-      location: "Mumbai",
-      yearOfManufacture: "2022",
-      brand: "Apple",
-      rating: 4.8,
-      reviews: 156,
-      category: "Electronics",
-      isNew: false,
-      seller: "TechStore Mumbai"
-    },
-    {
-      id: 2,
-      image: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2025&q=80",
-      title: "Modern Office Chair",
-      description: "Ergonomic office chair with lumbar support and adjustable height",
-      price: 12000,
-      originalPrice: 15000,
-      condition: "Good",
-      location: "Delhi",
-      yearOfManufacture: "2021",
-      brand: "Herman Miller",
-      rating: 4.5,
-      reviews: 89,
-      category: "Furniture",
-      isNew: false,
-      seller: "Furniture World"
-    },
-    {
-      id: 3,
-      image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-      title: "Nike Air Max 270",
-      description: "Comfortable running shoes with maximum air cushioning",
-      price: 8500,
-      originalPrice: null,
-      condition: "New",
-      location: "Bangalore",
-      yearOfManufacture: "2023",
-      brand: "Nike",
-      rating: 4.7,
-      reviews: 234,
-      category: "Fashion",
-      isNew: true,
-      seller: "SportZone"
-    },
-    {
-      id: 4,
-      image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-      title: "MacBook Pro M2",
-      description: "Apple MacBook Pro with M2 chip, 16GB RAM, 512GB SSD",
-      price: 185000,
-      originalPrice: 200000,
-      condition: "Like New",
-      location: "Pune",
-      yearOfManufacture: "2023",
-      brand: "Apple",
-      rating: 4.9,
-      reviews: 67,
-      category: "Electronics",
-      isNew: false,
-      seller: "Apple Store"
-    },
-    {
-      id: 5,
-      image: "https://images.unsplash.com/photo-1544966503-7cc5ac882d5d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-      title: "Mountain Bike Trek",
-      description: "Professional mountain bike with 21-speed gear system",
-      price: 45000,
-      originalPrice: 50000,
-      condition: "Good",
-      location: "Chennai",
-      yearOfManufacture: "2022",
-      brand: "Trek",
-      rating: 4.6,
-      reviews: 45,
-      category: "Bikes",
-      isNew: false,
-      seller: "Cycle World"
-    },
-    {
-      id: 6,
-      image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-      title: "Dining Table Set",
-      description: "6-seater wooden dining table with chairs",
-      price: 35000,
-      originalPrice: 42000,
-      condition: "Good",
-      location: "Hyderabad",
-      yearOfManufacture: "2021",
-      brand: "IKEA",
-      rating: 4.4,
-      reviews: 78,
-      category: "Furniture",
-      isNew: false,
-      seller: "Home Decor"
-    }
-  ];
+  // Fetch products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const params = {
+          limit: 8, // Show only 8 products on landing page
+          sortBy: sortBy === 'featured' ? 'viewCount' : 
+                 sortBy === 'price-low' ? 'price' :
+                 sortBy === 'price-high' ? 'price' :
+                 sortBy === 'newest' ? 'createdAt' : 'viewCount',
+          sortOrder: sortBy === 'price-high' ? 'desc' : 
+                    sortBy === 'newest' ? 'desc' : 
+                    sortBy === 'featured' ? 'desc' : 'asc'
+        };
 
-  const filteredProducts = products.filter(product => 
-    selectedCategory === 'All' || product.category === selectedCategory
-  );
+        if (selectedCategory !== 'All') {
+          params.productCategory = selectedCategory;
+        }
+
+        const response = await productService.getAllProducts(params);
+        
+        // Filter out products where the seller is the current user
+        let filteredProducts = response.data.products || [];
+        if (user && user._id) {
+          filteredProducts = filteredProducts.filter(product => 
+            product.userId?._id !== user._id && product.userId !== user._id
+          );
+        }
+        
+        setProducts(filteredProducts);
+        reset(); // Reset retry count on successful fetch
+      } catch (err) {
+        console.error('Error fetching products:', err);
+        setError(err.response?.data?.message || 'Failed to load products');
+        setProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [selectedCategory, sortBy, retryCount, reset, user]);
 
   const handleViewDetails = (product) => {
-    navigate(`/product/${product.id}`);
+    navigate(`/product/${product.id || product._id}`);
   };
+
+  if (loading) {
+    return (
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
+              Explore Items
+            </h2>
+            <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
+              Discover amazing products from our community
+            </p>
+          </div>
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#782355]"></div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
+              Explore Items
+            </h2>
+            <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
+              Discover amazing products from our community
+            </p>
+          </div>
+          <div className="text-center py-12">
+            <p className="text-red-600 mb-4">{error}</p>
+            <button 
+              onClick={() => {
+                setError(null);
+                retry();
+              }}
+              disabled={!canRetry}
+              className="bg-[#782355] text-white px-6 py-2 rounded-lg hover:bg-[#8e2a63] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {canRetry ? 'Try Again' : 'Max Retries Reached'}
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="py-16 bg-white">
@@ -205,13 +208,31 @@ const ExploreItems = () => {
 
         {/* Products Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
-          {filteredProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onViewDetails={handleViewDetails}
-            />
-          ))}
+          {products.length > 0 ? (
+            products.map((product) => (
+              <ProductCard
+                key={product._id}
+                product={{
+                  id: product._id,
+                  image: product.imageUrls?.[0] || product.imageUrl,
+                  title: product.productTitle,
+                  description: product.productDescription,
+                  price: product.price,
+                  condition: product.condition,
+                  location: product.location?.address || 'Location not specified',
+                  yearOfManufacture: product.yearOfManufacture,
+                  brand: product.brand,
+                  category: product.productCategory,
+                  seller: product.userId?.name || 'Unknown Seller'
+                }}
+                onViewDetails={handleViewDetails}
+              />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-12">
+              <p className="text-gray-500 text-lg">No products found</p>
+            </div>
+          )}
         </div>
 
         {/* Show More Button */}

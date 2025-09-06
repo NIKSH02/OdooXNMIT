@@ -145,6 +145,52 @@ const OrderSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    // Payment related fields
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "completed", "failed", "refunded"],
+      default: "pending",
+    },
+    paymentMethod: {
+      type: String,
+      enum: ["razorpay", "cod", "wallet"],
+      default: "razorpay",
+    },
+    razorpayOrderId: {
+      type: String,
+      sparse: true,
+    },
+    razorpayPaymentId: {
+      type: String,
+      sparse: true,
+    },
+    razorpaySignature: {
+      type: String,
+      sparse: true,
+    },
+    paidAt: {
+      type: Date,
+    },
+    refundedAt: {
+      type: Date,
+    },
+    refundAmount: {
+      type: Number,
+      default: 0,
+    },
+    // For cart-based orders
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    totalAmount: {
+      type: Number,
+      min: 0,
+    },
+    currency: {
+      type: String,
+      default: "INR",
+    },
   },
   { timestamps: true }
 );
