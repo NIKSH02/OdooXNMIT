@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import ProductCard from '../components/landing/ProductCard';
 import productService from '../services/productService';
 import { useRetry } from '../hooks/useUtils';
+import { useAuth } from '../hooks/useAuth';
 import Navbar from '../components/landing/Navbar';
 import Footer from '../components/landing/Footer';
 
@@ -26,6 +27,7 @@ const AllProductsPage = () => {
   const [pagination, setPagination] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const { retryCount, canRetry, retry, reset } = useRetry();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   // Memoize priceRange to prevent infinite loops
@@ -95,11 +97,19 @@ const AllProductsPage = () => {
 
         const response = await productService.getAllProducts(params);
         
+        // Filter out products where the seller is the current user
+        let filteredProducts = response.data.products || [];
+        if (user && user._id) {
+          filteredProducts = filteredProducts.filter(product => 
+            product.userId?._id !== user._id && product.userId !== user._id
+          );
+        }
+        
         if (currentPage === 1) {
-          setProducts(response.data.products || []);
+          setProducts(filteredProducts);
         } else {
           // Append new products for pagination
-          setProducts(prev => [...prev, ...(response.data.products || [])]);
+          setProducts(prev => [...prev, ...filteredProducts]);
         }
         
         setPagination(response.data.pagination || {});
@@ -116,7 +126,7 @@ const AllProductsPage = () => {
     };
 
     fetchProducts();
-  }, [selectedCategory, selectedCondition, memoizedPriceRange, sortBy, currentPage, retryCount, reset]);
+  }, [selectedCategory, selectedCondition, memoizedPriceRange, sortBy, currentPage, retryCount, reset, user]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -414,6 +424,8 @@ const AllProductsPage = () => {
           </div>
         </div>
       </div>
+      
+      <Footer />
     </div>
   );
 };

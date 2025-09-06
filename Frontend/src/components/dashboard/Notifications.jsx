@@ -1,73 +1,128 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BellIcon,
   ArrowPathIcon,
   EllipsisVerticalIcon
 } from '@heroicons/react/24/outline';
+import { notificationService } from '../../services/notificationService';
 
 const Notifications = () => {
   const [activeTab, setActiveTab] = useState('all');
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [summary, setSummary] = useState({
+    total: 0,
+    unread: 0,
+    orders: 0,
+    delivery: 0,
+    reviews: 0,
+    messages: 0
+  });
 
-  const notifications = [
-    {
-      id: 1,
-      type: 'order',
-      title: 'Order Completed',
-      message: 'Your order for Wheat has been completed. Please leave a review!',
-      time: '3h ago',
-      isRead: false,
-      priority: 'normal',
-      icon: '📦'
-    },
-    {
-      id: 2,
-      type: 'order',
-      title: 'Order Shipped',
-      message: 'Your order for Wheat has been shipped and is on the way',
-      time: '3h ago',
-      isRead: false,
-      priority: 'normal',
-      icon: '🚚'
-    },
-    {
-      id: 3,
-      type: 'order',
-      title: 'Order Confirmed',
-      message: 'Your order for Wheat has been confirmed by the seller',
-      time: '3h ago',
-      isRead: false,
-      priority: 'normal',
-      icon: '✅'
-    },
-    {
-      id: 4,
-      type: 'order',
-      title: 'New Order Received',
-      message: 'You have received a new order for aalu (1 kg)',
-      time: '3h ago',
-      isRead: false,
-      priority: 'high',
-      icon: '🛒'
-    },
-    {
-      id: 5,
-      type: 'review',
-      title: 'New Review Received',
-      message: 'You received a 4-star review from undefined',
-      time: '19d ago',
-      isRead: true,
-      priority: 'normal',
-      icon: '⭐'
+  // Fetch notifications when component mounts or tab changes
+  useEffect(() => {
+    fetchNotifications();
+    fetchNotificationSummary();
+  }, [activeTab]);
+
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      let response;
+      if (activeTab === 'all') {
+        response = await notificationService.getUserNotifications(1, 20);
+      } else if (activeTab === 'unread') {
+        response = await notificationService.getUserNotifications(1, 20, '', false);
+      } else {
+        response = await notificationService.getNotificationsByType(activeTab);
+      }
+      
+      if (response.success) {
+        setNotifications(response.data.notifications || []);
+      } else {
+        setError(response.message || 'Failed to fetch notifications');
+      }
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+      setError(err.message || 'Failed to fetch notifications');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const fetchNotificationSummary = async () => {
+    try {
+      const response = await notificationService.getNotificationSummary();
+      if (response.success) {
+        setSummary(response.data || summary);
+      }
+    } catch (err) {
+      console.error('Error fetching notification summary:', err);
+    }
+  };
+
+  const handleMarkAsRead = async (notificationId) => {
+    try {
+      const response = await notificationService.markNotificationAsRead(notificationId);
+      if (response.success) {
+        // Update local state
+        setNotifications(prev => 
+          prev.map(notif => 
+            notif._id === notificationId 
+              ? { ...notif, isRead: true }
+              : notif
+          )
+        );
+        // Refresh summary
+        fetchNotificationSummary();
+      }
+    } catch (err) {
+      console.error('Error marking notification as read:', err);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      const response = await notificationService.markAllNotificationsAsRead();
+      if (response.success) {
+        // Update all notifications to read
+        setNotifications(prev => 
+          prev.map(notif => ({ ...notif, isRead: true }))
+        );
+        // Refresh summary
+        fetchNotificationSummary();
+      }
+    } catch (err) {
+      console.error('Error marking all notifications as read:', err);
+    }
+  };
+
+  const handleDeleteNotification = async (notificationId) => {
+    try {
+      const response = await notificationService.deleteNotification(notificationId);
+      if (response.success) {
+        // Remove from local state
+        setNotifications(prev => 
+          prev.filter(notif => notif._id !== notificationId)
+        );
+        // Refresh summary
+        fetchNotificationSummary();
+      }
+    } catch (err) {
+      console.error('Error deleting notification:', err);
+    }
+  };
 
   const tabs = [
-    { id: 'all', label: 'All', count: 12 },
-    { id: 'unread', label: 'Unread', count: 0 },
-    { id: 'orders', label: 'Orders', count: 10 },
-    { id: 'delivery', label: 'Delivery', count: 1 },
-    { id: 'reviews', label: 'Reviews', count: 4 },
-    { id: 'messages', label: 'Messages', count: 2 }
+    { id: 'all', label: 'All', count: summary.total || 0 },
+    { id: 'unread', label: 'Unread', count: summary.unread || 0 },
+    { id: 'orders', label: 'Orders', count: summary.orders || 0 },
+    { id: 'delivery', label: 'Delivery', count: summary.delivery || 0 },
+    { id: 'reviews', label: 'Reviews', count: summary.reviews || 0 },
+    { id: 'messages', label: 'Messages', count: summary.messages || 0 }
   ];
 
   const getPriorityColor = (priority) => {

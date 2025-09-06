@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon, StarIcon, HeartIcon } from '@heroicons/react/24/outline';
+import { ChevronLeftIcon, ChevronRightIcon, StarIcon, HeartIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon, StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
-import { MapPinIcon, CalendarIcon, TagIcon, TruckIcon, ShieldCheckIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
+import { MapPinIcon, CalendarIcon, TagIcon, TruckIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { useNavigate, useParams } from 'react-router-dom';
 import productService from '../services/productService';
+import { paymentService, openRazorpayCheckout } from '../services/paymentService';
 import { useRetry } from '../hooks/useUtils';
 import { useCart } from '../hooks/useCart';
 import Navbar from '../components/landing/Navbar';
@@ -11,21 +12,140 @@ import Footer from '../components/landing/Footer';
 
 const ProductDetailPage = () => {
   const { id } = useParams();
-
+  const navigate = useNavigate();
   const { retryCount, canRetry, retry, reset } = useRetry();
+  const { addToCart } = useCart();
   
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
-   const { addToCart } = useCart();
-
-  const handleAddToCart = () => {
-    addToCart(product, selectedQuantity);
-    navigate('/cart');
-  }; 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
+  const handleAddToCart = async () => {
+    try {
+      setAddingToCart(true);
+      const productForCart = {
+        id: product._id,
+        title: product.productTitle,
+        price: product.price,
+        image: product.imageUrls?.[0] || product.imageUrl,
+        condition: product.condition,
+        location: product.location,
+        seller: product.userId?.name || 'Unknown Seller',
+        inStock: product.quantity > 0
+      };
+      
+      addToCart(productForCart, selectedQuantity);
+      
+      // Show success message or navigate to cart
+      navigate('/cart');
+    } catch (err) {
+      console.error('Error adding to cart:', err);
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
+  const handleBuyNow = async () => {
+    if (product.quantity === 0) {
+      alert('Product is out of stock');
+      return;
+    }
+
+    // Prevent double clicking
+    if (isProcessingPayment) {
+      console.log('Payment already in progress, ignoring click');
+      return;
+    }
+
+    setIsProcessingPayment(true);
+
+    try {
+      const totalAmount = product.price * selectedQuantity;
+      
+      // Create order in backend
+      const orderData = {
+        items: [{
+          productId: product._id,
+          quantity: selectedQuantity,
+          price: product.price
+        }],
+        totalAmount: totalAmount,
+        currency: 'INR'
+      };
+
+      const orderResponse = await paymentService.createOrder(orderData);
+      
+      if (!orderResponse.success) {
+        throw new Error(orderResponse.message || 'Failed to create order');
+      }
+
+      const { order } = orderResponse.data;
+
+      // Razorpay options
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_U0JVBIF0p05ory',
+        amount: order.amount,
+        currency: order.currency,
+        name: 'OdooXNMIT',
+        description: `Purchase: ${product.productTitle}`,
+        order_id: order.id,
+        handler: async function (response) {
+          try {
+            // Verify payment
+            const verifyResponse = await paymentService.verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              cartItems: [{
+                id: product._id,
+                title: product.productTitle,
+                price: product.price,
+                quantity: selectedQuantity,
+                seller: product.userId?.name || 'Unknown Seller',
+                sellerId: product.userId?._id
+              }]
+            });
+
+            if (verifyResponse.success) {
+              alert('Payment successful! Your order has been placed.');
+              navigate('/dashboard/orders-placed');
+            } else {
+              throw new Error('Payment verification failed');
+            }
+          } catch (error) {
+            console.error('Payment verification error:', error);
+            alert('Payment verification failed. Please contact support.');
+          }
+        },
+        prefill: {
+          name: '',
+          email: '',
+          contact: ''
+        },
+        theme: {
+          color: '#782355'
+        },
+        modal: {
+          ondismiss: function() {
+            setIsProcessingPayment(false);
+          }
+        }
+      };
+
+      // Open Razorpay checkout
+      await openRazorpayCheckout(options);
+
+    } catch (error) {
+      console.error('Buy now error:', error);
+      alert('Purchase failed: ' + (error.message || 'Unknown error'));
+      setIsProcessingPayment(false);
+    }
+  };
 
   // Fetch product details from API
   useEffect(() => {
@@ -131,6 +251,7 @@ const ProductDetailPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Navbar />
         
       {/* Back Navigation */}
       <div className="bg-white shadow-sm">
@@ -320,17 +441,19 @@ const ProductDetailPage = () => {
 
                 <div className="flex gap-3">
                   <button 
-                    disabled={product.quantity === 0}
-                    
+                    disabled={product.quantity === 0 || addingToCart}
                     onClick={handleAddToCart}
-                    className="flex-1 bg-gradient-to-r from-[#782355] to-[#9c3069] text-white py-3 px-6 rounded-xl font-semibold hover:from-[#9c3069] hover:to-[#782355] transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
+                    className="flex-1 bg-gradient-to-r from-[#782355] to-[#9c3069] text-white py-3 px-6 rounded-xl font-semibold hover:from-[#9c3069] hover:to-[#782355] transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                   >
                     <ShoppingCartIcon className="w-5 h-5" />
-                    Add to Cart
+                    {addingToCart ? 'Adding...' : 'Add to Cart'}
                   </button>
-                  <button className="flex-1 bg-white text-[#782355] py-3 px-6 rounded-xl font-semibold border-2 border-[#782355] hover:bg-[#782355] hover:text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  <button 
+                    disabled={product.quantity === 0 || isProcessingPayment}
+                    onClick={handleBuyNow}
+                    className="flex-1 bg-white text-[#782355] py-3 px-6 rounded-xl font-semibold border-2 border-[#782355] hover:bg-[#782355] hover:text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {product.quantity === 0 ? 'Out of Stock' : 'Send Request'}
+                    {product.quantity === 0 ? 'Out of Stock' : isProcessingPayment ? 'Processing...' : 'Buy Now'}
                   </button>
                   <button 
                     onClick={() => setIsFavorite(!isFavorite)}
@@ -340,36 +463,6 @@ const ProductDetailPage = () => {
                   </button>
                 </div>
               </div>
-
-              {/* Seller Info */}
-              {product.userId && (
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <h3 className="font-semibold text-gray-900 mb-3">Seller Information</h3>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[#782355] rounded-full flex items-center justify-center text-white font-semibold">
-                      {product.userId.name?.charAt(0).toUpperCase() || 'U'}
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{product.userId.name || 'Unknown Seller'}</p>
-                      <p className="text-sm text-gray-600">@{product.userId.username || 'username'}</p>
-                      {product.userId.rating && (
-                        <div className="flex items-center gap-1 mt-1">
-                          <StarSolidIcon className="h-4 w-4 text-yellow-400" />
-                          <span className="text-sm text-gray-600">{product.userId.rating}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="mt-3 flex gap-2">
-                    <button className="flex-1 bg-[#782355] text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-[#8e2a63] transition-colors">
-                      Contact Seller
-                    </button>
-                    <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
-                      View Profile
-                    </button>
-                  </div>
-                </div>
-              )}
 
             </div>
           </div>
@@ -465,6 +558,8 @@ const ProductDetailPage = () => {
           )}
         </div>
       </div>
+      
+      <Footer />
     </div>
   );
 };

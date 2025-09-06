@@ -169,9 +169,15 @@ const placeOrder = asyncHandler(async (req, res) => {
 const getBuyerOrderHistory = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, status } = req.query;
 
+  // Debug logging
+  console.log('getBuyerOrderHistory - req.user._id:', req.user._id);
+  console.log('getBuyerOrderHistory - req.user._id type:', typeof req.user._id);
+
   // Filter by buyerId to show orders this user has placed
   const filter = { buyerId: req.user._id };
   if (status) filter.status = status;
+
+  console.log('getBuyerOrderHistory - filter:', filter);
 
   const skip = (page - 1) * limit;
 
@@ -183,6 +189,9 @@ const getBuyerOrderHistory = asyncHandler(async (req, res) => {
     .limit(Number(limit));
 
   const total = await Order.countDocuments(filter);
+
+  console.log('getBuyerOrderHistory - orders found:', orders.length);
+  console.log('getBuyerOrderHistory - total count:', total);
 
   // Enhanced order data
   const enhancedOrders = orders.map((order) => {
@@ -218,9 +227,15 @@ const getBuyerOrderHistory = asyncHandler(async (req, res) => {
 const getSellerOrders = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, status } = req.query;
 
+  // Debug logging
+  console.log('getSellerOrders - req.user._id:', req.user._id);
+  console.log('getSellerOrders - req.user._id type:', typeof req.user._id);
+
   // Filter by sellerId to show orders this user needs to fulfill
   const filter = { sellerId: req.user._id };
   if (status) filter.status = status;
+
+  console.log('getSellerOrders - filter:', filter);
 
   const skip = (page - 1) * limit;
 
@@ -232,6 +247,9 @@ const getSellerOrders = asyncHandler(async (req, res) => {
     .limit(Number(limit));
 
   const total = await Order.countDocuments(filter);
+
+  console.log('getSellerOrders - orders found:', orders.length);
+  console.log('getSellerOrders - total count:', total);
 
   // Enhanced order data with seller actions
   const enhancedOrders = orders.map((order) => {
@@ -275,7 +293,7 @@ const getSellerOrders = asyncHandler(async (req, res) => {
 // Update order status (seller actions)
 const updateOrderStatus = asyncHandler(async (req, res) => {
   const { orderId } = req.params;
-  const { action, notes, exchangeCode } = req.body; // action: 'accept', 'process', 'ship', 'complete', 'cancel'
+  const { action, notes } = req.body; // action: 'accept', 'process', 'ship', 'complete', 'cancel'
 
   if (!["accept", "process", "ship", "complete", "cancel"].includes(action)) {
     throw new ApiError(
@@ -322,25 +340,6 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
       order.status = "shipped";
       break;
     case "complete":
-      // Only require exchange code for 'complete' action
-      if (!exchangeCode || typeof exchangeCode !== "string") {
-        throw new ApiError(
-          400,
-          "Exchange code is required to complete the order."
-        );
-      }
-      if (!order.exchangeCode || typeof order.exchangeCode !== "string") {
-        throw new ApiError(400, "No exchange code generated for this order.");
-      }
-      // Compare codes case-insensitively and trimmed
-      const submittedCode = exchangeCode.trim().toUpperCase();
-      const dbCode = order.exchangeCode.trim().toUpperCase();
-      if (submittedCode !== dbCode) {
-        throw new ApiError(
-          400,
-          "Invalid exchange code. Please enter the correct code provided by the buyer."
-        );
-      }
       order.status = "completed";
       order.completedAt = new Date();
       break;

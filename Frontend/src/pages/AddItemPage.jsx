@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ChevronLeftIcon,
@@ -6,10 +6,19 @@ import {
   XMarkIcon,
   PlusIcon,
   MapPinIcon,
-  InformationCircleIcon
+  InformationCircleIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import Navbar from '../components/landing/Navbar';
 import Footer from '../components/landing/Footer';
+import productService from '../services/productService';
+import mapboxgl from 'mapbox-gl';
+import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
+import 'mapbox-gl/dist/mapbox-gl.css';
+import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
+
+// Set Mapbox access token
+mapboxgl.accessToken = import.meta.env.VITE_MAP_TOKEN;
 
 const AddItemPage = () => {
   const navigate = useNavigate();
@@ -55,6 +64,13 @@ const AddItemPage = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [newTag, setNewTag] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  
+  // Mapbox refs
+  const mapContainer = useRef(null);
+  const map = useRef(null);
+  const geocoder = useRef(null);
 
   const categories = [
     "Cars", "Properties", "Mobiles", "Jobs", "Bikes", 
@@ -63,6 +79,133 @@ const AddItemPage = () => {
   ];
 
   const conditions = ["New", "Used", "Refurbished"];
+
+  // Form validation functions
+  const validateStep1 = () => {
+    const errors = {};
+    if (!formData.productTitle.trim()) {
+      errors.productTitle = 'Product title is required';
+    }
+    if (!formData.productCategory) {
+      errors.productCategory = 'Category is required';
+    }
+    if (!formData.price || parseFloat(formData.price) <= 0) {
+      errors.price = 'Valid price is required';
+    }
+    return errors;
+  };
+
+  const validateStep2 = () => {
+    const errors = {};
+    // Step 2 validation is optional, just warnings
+    return errors;
+  };
+
+  const validateStep3 = () => {
+    const errors = {};
+    if (!formData.location.address.trim()) {
+      errors.location = 'Location is required';
+    }
+    if (images.length === 0) {
+      errors.images = 'At least one image is required';
+    }
+    return errors;
+  };
+
+  const validateStep4 = () => {
+    const errors = {};
+    // Step 4 validation - everything should be valid by now
+    // Re-validate all previous steps
+    const step1Errors = validateStep1();
+    const step3Errors = validateStep3();
+    
+    return { ...step1Errors, ...step3Errors };
+  };
+
+  const validateCurrentStep = () => {
+    let errors = {};
+    switch (currentStep) {
+      case 1:
+        errors = validateStep1();
+        break;
+      case 2:
+        errors = validateStep2();
+        break;
+      case 3:
+        errors = validateStep3();
+        break;
+      case 4:
+        errors = validateStep4();
+        break;
+      default:
+        break;
+    }
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Initialize Mapbox map
+  useEffect(() => {
+    if (showLocationModal && mapContainer.current && !map.current) {
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: [77.2090, 28.6139], // Default to Delhi
+        zoom: 10
+      });
+
+      // Add geocoder
+      geocoder.current = new MapboxGeocoder({
+        accessToken: mapboxgl.accessToken,
+        mapboxgl: mapboxgl,
+        marker: true,
+        placeholder: 'Search for a location'
+      });
+
+      map.current.addControl(geocoder.current);
+
+      // Handle location selection
+      geocoder.current.on('result', (e) => {
+        const { place_name, center } = e.result;
+        setFormData(prev => ({
+          ...prev,
+          location: {
+            address: place_name,
+            lng: center[0],
+            lat: center[1]
+          }
+        }));
+      });
+
+      // Handle map click
+      map.current.on('click', (e) => {
+        const { lng, lat } = e.lngLat;
+        
+        // Reverse geocoding to get address
+        fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxgl.accessToken}`)
+          .then(response => response.json())
+          .then(data => {
+            const address = data.features[0]?.place_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+            setFormData(prev => ({
+              ...prev,
+              location: {
+                address,
+                lng,
+                lat
+              }
+            }));
+          });
+      });
+    }
+  }, [showLocationModal]);
+
+  const openLocationModal = () => {
+    setShowLocationModal(true);
+  };
+
+  const closeLocationModal = () => {
+    setShowLocationModal(false);
+  };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -127,21 +270,75 @@ const AddItemPage = () => {
     }));
   };
 
+  const nextStep = () => {
+    console.log('Validating step', currentStep);
+    const isValid = validateCurrentStep();
+    console.log('Validation result:', isValid);
+    console.log('Form errors:', formErrors);
+    
+    if (isValid) {
+      setCurrentStep(prev => Math.min(prev + 1, 4));
+    } else {
+      console.log('Validation failed, not proceeding to next step');
+    }
+  };
+
+  const prevStep = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+    setFormErrors({}); // Clear errors when going back
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Only submit on step 4 and after validation
+    if (currentStep !== 4) {
+      return;
+    }
+    
+    // Final validation
+    if (!validateCurrentStep()) {
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
-      // Here you would submit to your backend API
-      console.log('Submitting product:', formData, images);
+      // Validate required fields
+      if (!formData.productTitle || !formData.productCategory || !formData.price) {
+        throw new Error('Please fill in all required fields');
+      }
+
+      if (!formData.location.address) {
+        throw new Error('Please provide a location address');
+      }
+
+      // Prepare form data for submission
+      const submitData = {
+        ...formData,
+        price: parseFloat(formData.price),
+        quantity: parseInt(formData.quantity),
+        yearOfManufacture: formData.yearOfManufacture ? parseInt(formData.yearOfManufacture) : undefined,
+        weight: formData.weight ? parseFloat(formData.weight) : undefined,
+        deliveryFee: parseFloat(formData.deliveryFee),
+        images: images.map(img => img.file)
+      };
+
+      console.log('Submitting product:', submitData);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Submit to backend
+      const response = await productService.createProduct(submitData);
       
-      // Navigate back to listings or show success message
+      console.log('Product created successfully:', response);
+      
+      // Show success message
+      alert('Product added successfully!');
+      
+      // Navigate back to listings
       navigate('/dashboard/listings');
     } catch (error) {
       console.error('Error submitting product:', error);
+      alert(error.message || 'Failed to add product. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -161,10 +358,18 @@ const AddItemPage = () => {
           name="productTitle"
           value={formData.productTitle}
           onChange={handleInputChange}
-          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#782355] focus:border-transparent"
+          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#782355] focus:border-transparent ${
+            formErrors.productTitle ? 'border-red-500' : 'border-gray-300'
+          }`}
           placeholder="Enter product title"
           required
         />
+        {formErrors.productTitle && (
+          <p className="text-red-500 text-sm mt-1 flex items-center gap-2">
+            <ExclamationTriangleIcon className="h-4 w-4" />
+            {formErrors.productTitle}
+          </p>
+        )}
       </div>
 
       {/* Category */}
@@ -176,7 +381,9 @@ const AddItemPage = () => {
           name="productCategory"
           value={formData.productCategory}
           onChange={handleInputChange}
-          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#782355] focus:border-transparent"
+          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#782355] focus:border-transparent ${
+            formErrors.productCategory ? 'border-red-500' : 'border-gray-300'
+          }`}
           required
         >
           <option value="">Select a category</option>
@@ -184,6 +391,12 @@ const AddItemPage = () => {
             <option key={category} value={category}>{category}</option>
           ))}
         </select>
+        {formErrors.productCategory && (
+          <p className="text-red-500 text-sm mt-1 flex items-center gap-2">
+            <ExclamationTriangleIcon className="h-4 w-4" />
+            {formErrors.productCategory}
+          </p>
+        )}
       </div>
 
       {/* Description */}
@@ -212,11 +425,19 @@ const AddItemPage = () => {
             name="price"
             value={formData.price}
             onChange={handleInputChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#782355] focus:border-transparent"
+            className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#782355] focus:border-transparent ${
+              formErrors.price ? 'border-red-500' : 'border-gray-300'
+            }`}
             placeholder="0"
             min="0"
             required
           />
+          {formErrors.price && (
+            <p className="text-red-500 text-sm mt-1 flex items-center gap-2">
+              <ExclamationTriangleIcon className="h-4 w-4" />
+              {formErrors.price}
+            </p>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -448,9 +669,11 @@ const AddItemPage = () => {
       {/* Image Upload */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Product Images
+          Product Images *
         </label>
-        <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
+        <div className={`border-2 border-dashed rounded-xl p-6 text-center ${
+          formErrors.images ? 'border-red-500 bg-red-50' : 'border-gray-300'
+        }`}>
           <PhotoIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-600 mb-4">Upload up to 10 images</p>
           <input
@@ -468,6 +691,13 @@ const AddItemPage = () => {
             Choose Images
           </label>
         </div>
+        
+        {formErrors.images && (
+          <p className="text-red-500 text-sm mt-2 flex items-center gap-2">
+            <ExclamationTriangleIcon className="h-4 w-4" />
+            {formErrors.images}
+          </p>
+        )}
         
         {/* Image Preview */}
         {images.length > 0 && (
@@ -506,17 +736,43 @@ const AddItemPage = () => {
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Location *
         </label>
-        <div className="relative">
-          <input
-            type="text"
-            name="location.address"
-            value={formData.location.address}
-            onChange={handleInputChange}
-            className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#782355] focus:border-transparent"
-            placeholder="Enter your location"
-            required
-          />
-          <MapPinIcon className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+        <div className="space-y-3">
+          <div className="relative">
+            <input
+              type="text"
+              name="location.address"
+              value={formData.location.address}
+              onChange={handleInputChange}
+              className={`w-full px-4 py-3 pl-10 border rounded-xl focus:ring-2 focus:ring-[#782355] focus:border-transparent ${
+                formErrors.location ? 'border-red-500' : 'border-gray-300'
+              }`}
+              placeholder="Enter your location"
+              required
+            />
+            <MapPinIcon className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+          </div>
+          
+          <button
+            type="button"
+            onClick={openLocationModal}
+            className="w-full bg-blue-50 text-blue-700 py-3 px-4 rounded-xl border border-blue-200 hover:bg-blue-100 transition-colors duration-200 flex items-center justify-center gap-2"
+          >
+            <MapPinIcon className="h-5 w-5" />
+            Select Location on Map
+          </button>
+          
+          {formErrors.location && (
+            <p className="text-red-500 text-sm flex items-center gap-2">
+              <ExclamationTriangleIcon className="h-4 w-4" />
+              {formErrors.location}
+            </p>
+          )}
+          
+          {formData.location.lat && formData.location.lng && (
+            <p className="text-sm text-green-600">
+              ✅ Location selected: {formData.location.lat.toFixed(6)}, {formData.location.lng.toFixed(6)}
+            </p>
+          )}
         </div>
       </div>
 
@@ -710,7 +966,7 @@ const AddItemPage = () => {
             <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
               <button
                 type="button"
-                onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
+                onClick={prevStep}
                 disabled={currentStep === 1}
                 className={`px-6 py-3 rounded-xl font-medium transition-colors duration-200 ${
                   currentStep === 1
@@ -724,7 +980,7 @@ const AddItemPage = () => {
               {currentStep < 4 ? (
                 <button
                   type="button"
-                  onClick={() => setCurrentStep(currentStep + 1)}
+                  onClick={nextStep}
                   className="px-6 py-3 bg-[#782355] text-white rounded-xl font-medium hover:bg-[#8e2a63] transition-colors duration-200"
                 >
                   Next
@@ -746,6 +1002,43 @@ const AddItemPage = () => {
           </form>
         </div>
       </div>
+      
+      {/* Location Modal */}
+      {showLocationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-gray-900">Select Location</h3>
+              <button
+                onClick={closeLocationModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <div
+                ref={mapContainer}
+                className="w-full h-96 rounded-xl"
+                style={{ minHeight: '400px' }}
+              />
+              
+              <div className="mt-4 flex justify-between items-center">
+                <div className="text-sm text-gray-600">
+                  Search for a location or click on the map to select
+                </div>
+                <button
+                  onClick={closeLocationModal}
+                  className="bg-[#782355] text-white px-6 py-2 rounded-lg hover:bg-[#8e2a63] transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       <Footer />
     </div>

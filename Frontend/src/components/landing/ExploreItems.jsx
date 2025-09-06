@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import ProductCard from './ProductCard';
 import productService from '../../services/productService';
 import { useRetry } from '../../hooks/useUtils';
+import { useAuth } from '../../hooks/useAuth';
 
 const ExploreItems = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -13,6 +14,7 @@ const ExploreItems = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { retryCount, canRetry, retry, reset } = useRetry();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const categories = [
@@ -56,7 +58,16 @@ const ExploreItems = () => {
         }
 
         const response = await productService.getAllProducts(params);
-        setProducts(response.data.products || []);
+        
+        // Filter out products where the seller is the current user
+        let filteredProducts = response.data.products || [];
+        if (user && user._id) {
+          filteredProducts = filteredProducts.filter(product => 
+            product.userId?._id !== user._id && product.userId !== user._id
+          );
+        }
+        
+        setProducts(filteredProducts);
         reset(); // Reset retry count on successful fetch
       } catch (err) {
         console.error('Error fetching products:', err);
@@ -68,7 +79,7 @@ const ExploreItems = () => {
     };
 
     fetchProducts();
-  }, [selectedCategory, sortBy, retryCount, reset]);
+  }, [selectedCategory, sortBy, retryCount, reset, user]);
 
   const handleViewDetails = (product) => {
     navigate(`/product/${product.id || product._id}`);
