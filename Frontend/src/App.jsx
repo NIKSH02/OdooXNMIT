@@ -11,6 +11,7 @@ import {
 import { useAuth } from "./hooks/useAuth";
 import AllProductsPage from "./pages/AllProductsPage";
 import LandingPage from "./pages/LandingPage";
+import SearchResults from "./pages/SearchResults";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import CartPage from "./pages/CartPage";
 import AddItemPage from "./pages/AddItemPage";
@@ -84,6 +85,7 @@ function App() {
               <Route path='/' element={<LandingPage />} />
               <Route path="/products" element={<AllProductsPage />} />
               <Route path="/product/:id" element={<ProductDetailPage />} />
+              <Route path="/search" element={<SearchResults />} />
               <Route path="/cart" element={<CartPage />} />
               
               {/* Protected Routes - Authentication required */}
