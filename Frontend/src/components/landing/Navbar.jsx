@@ -22,7 +22,7 @@ const Navbar = () => {
     try {
       await logout();
       // The AuthContext will handle clearing tokens and state
-      window.location.reload(); // Optional: refresh to update UI
+      // No need to reload - React will re-render with updated auth state
     } catch (error) {
       console.error("Logout error:", error);
     }

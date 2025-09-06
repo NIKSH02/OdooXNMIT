@@ -1,78 +1,124 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon, StarIcon, HeartIcon } from '@heroicons/react/24/outline';
-import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
+import { HeartIcon as HeartSolidIcon, StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import { MapPinIcon, CalendarIcon, TagIcon, TruckIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import productService from '../services/productService';
+import { useRetry } from '../hooks/useUtils';
 
 const ProductDetailPage = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { retryCount, canRetry, retry, reset } = useRetry();
+  
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
-  const navigate = useNavigate();
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Sample product data - In real app, this would come from props or API
-  const product = {
-    id: 1,
-    title: "iPhone 13 Pro Max - 128GB",
-    description: "Experience the latest Apple iPhone 13 Pro Max with advanced camera system, A15 Bionic chip, and stunning Super Retina XDR display. This device is in excellent condition with minimal signs of use.",
-    price: 85000,
-    originalPrice: 95000,
-    condition: "Like New",
-    location: "Mumbai, Maharashtra",
-    yearOfManufacture: "2022",
-    brand: "Apple",
-    model: "iPhone 13 Pro Max",
-    rating: 4.8,
-    reviews: 156,
-    category: "Electronics",
-    seller: {
-      name: "TechStore Mumbai",
-      rating: 4.9,
-      sales: 2340,
-      verified: true
-    },
-    specifications: {
-      color: "Pacific Blue",
-      storage: "128GB",
-      display: "6.7-inch Super Retina XDR",
-      processor: "A15 Bionic chip",
-      camera: "Pro 12MP camera system",
-      battery: "Up to 28 hours video playback",
-      weight: "240 grams",
-      dimensions: "160.8 × 78.1 × 7.65 mm",
-      connectivity: "5G, Wi-Fi 6, Bluetooth 5.0",
-      operatingSystem: "iOS 15 (upgradable)"
-    },
-    features: [
-      "ProRAW photography",
-      "ProRes video recording",
-      "Face ID",
-      "Water resistant (IP68)",
-      "MagSafe compatible",
-      "Ceramic Shield front"
-    ],
-    images: [
-      "https://images.unsplash.com/photo-1592286108767-df102fde88dc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2075&q=80",
-      "https://images.unsplash.com/photo-1605787020600-b9ebd5df1d07?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2063&q=80",
-      "https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
-    ],
-    availability: "In Stock",
-    shipping: {
-      freeShipping: true,
-      deliveryTime: "2-3 business days",
-      returnPolicy: "7 days return policy"
+  // Fetch product details from API
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log('Fetching product with ID:', id);
+        
+        if (!id || id === 'undefined') {
+          throw new Error('Invalid product ID');
+        }
+        
+        const response = await productService.getProductById(id);
+        setProduct(response.data);
+        reset(); // Reset retry count on successful fetch
+      } catch (err) {
+        console.error('Error fetching product:', err);
+        setError(err.response?.data?.message || 'Failed to load product details');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchProduct();
     }
-  };
+  }, [id, retryCount, reset]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#782355]"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center py-12">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading product</h3>
+          <p className="text-red-600 mb-4">{error}</p>
+          <div className="space-x-4">
+            <button 
+              onClick={() => {
+                setError(null);
+                retry();
+              }}
+              disabled={!canRetry}
+              className="bg-[#782355] text-white px-6 py-2 rounded-lg hover:bg-[#8e2a63] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {canRetry ? 'Try Again' : 'Max Retries Reached'}
+            </button>
+            <button 
+              onClick={() => navigate(-1)}
+              className="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+            >
+              Go Back
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center py-12">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Product not found</h3>
+          <p className="text-gray-600 mb-4">The product you're looking for doesn't exist or has been removed.</p>
+          <button 
+            onClick={() => navigate(-1)}
+            className="bg-[#782355] text-white px-6 py-2 rounded-lg hover:bg-[#8e2a63] transition-colors"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Prepare images array from product data
+  const images = product.imageUrls && product.imageUrls.length > 0 
+    ? product.imageUrls 
+    : product.imageUrl 
+    ? [product.imageUrl] 
+    : ['/api/placeholder/600/600']; // Fallback placeholder
 
   const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % product.images.length);
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
   };
 
   const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + product.images.length) % product.images.length);
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
-  const discountPercentage = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
+  // Calculate original price for discount display (assuming 20% markup for display)
+  const originalPrice = Math.round(product.price * 1.2);
+  const discountPercentage = Math.round(((originalPrice - product.price) / originalPrice) * 100);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -97,13 +143,13 @@ const ProductDetailPage = () => {
               {/* Main Image */}
               <div className="relative bg-gray-100 rounded-2xl overflow-hidden aspect-square">
                 <img
-                  src={product.images[currentImageIndex]}
-                  alt={product.title}
+                  src={images[currentImageIndex]}
+                  alt={product.productTitle}
                   className="w-full h-full object-cover"
                 />
                 
                 {/* Image Navigation */}
-                {product.images.length > 1 && (
+                {images.length > 1 && (
                   <>
                     <button
                       onClick={prevImage}
@@ -135,7 +181,7 @@ const ProductDetailPage = () => {
 
               {/* Thumbnail Images */}
               <div className="flex gap-3 overflow-x-auto pb-2">
-                {product.images.map((image, index) => (
+                {images.map((image, index) => (
                   <button
                     key={index}
                     onClick={() => setCurrentImageIndex(index)}
@@ -147,7 +193,7 @@ const ProductDetailPage = () => {
                   >
                     <img
                       src={image}
-                      alt={`${product.title} ${index + 1}`}
+                      alt={`${product.productTitle} ${index + 1}`}
                       className="w-full h-full object-cover"
                     />
                   </button>
@@ -161,33 +207,38 @@ const ProductDetailPage = () => {
               <div>
                 <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
                   <TagIcon className="h-4 w-4" />
-                  <span>{product.category}</span>
-                  <span>•</span>
-                  <span>{product.brand}</span>
+                  <span>{product.productCategory}</span>
+                  {product.brand && (
+                    <>
+                      <span>•</span>
+                      <span>{product.brand}</span>
+                    </>
+                  )}
                 </div>
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-                  {product.title}
+                  {product.productTitle}
                 </h1>
                 <p className="text-gray-600 leading-relaxed">
-                  {product.description}
+                  {product.productDescription || 'No description available.'}
                 </p>
               </div>
 
-         
-              
-               
               {/* Price */}
               <div className="bg-gray-50 rounded-xl p-4">
                 <div className="flex items-center gap-3 mb-2">
                   <span className="text-3xl font-bold text-[#782355]">
                     ₹{product.price.toLocaleString()}
                   </span>
-                  <span className="text-lg text-gray-500 line-through">
-                    ₹{product.originalPrice.toLocaleString()}
-                  </span>
-                  <span className="bg-green-100 text-green-800 text-sm font-medium px-2 py-1 rounded-full">
-                    {discountPercentage}% off
-                  </span>
+                  {discountPercentage > 0 && (
+                    <>
+                      <span className="text-lg text-gray-500 line-through">
+                        ₹{originalPrice.toLocaleString()}
+                      </span>
+                      <span className="bg-green-100 text-green-800 text-sm font-medium px-2 py-1 rounded-full">
+                        {discountPercentage}% off
+                      </span>
+                    </>
+                  )}
                 </div>
                 <p className="text-sm text-gray-600">Inclusive of all taxes</p>
               </div>
@@ -197,8 +248,8 @@ const ProductDetailPage = () => {
                 <div className="flex items-center gap-2 text-sm">
                   <div className={`w-3 h-3 rounded-full ${
                     product.condition === 'New' ? 'bg-green-500' :
-                    product.condition === 'Like New' ? 'bg-blue-500' :
-                    product.condition === 'Good' ? 'bg-yellow-500' : 'bg-gray-500'
+                    product.condition === 'Refurbished' ? 'bg-blue-500' :
+                    product.condition === 'Used' ? 'bg-yellow-500' : 'bg-gray-500'
                   }`}></div>
                   <span className="text-gray-600">Condition:</span>
                   <span className="font-medium">{product.condition}</span>
@@ -206,17 +257,30 @@ const ProductDetailPage = () => {
                 <div className="flex items-center gap-2 text-sm">
                   <MapPinIcon className="h-4 w-4 text-gray-400" />
                   <span className="text-gray-600">Location:</span>
-                  <span className="font-medium">{product.location}</span>
+                  <span className="font-medium">{product.location?.address || 'Not specified'}</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <CalendarIcon className="h-4 w-4 text-gray-400" />
-                  <span className="text-gray-600">Year:</span>
-                  <span className="font-medium">{product.yearOfManufacture}</span>
-                </div>
+                {product.yearOfManufacture && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <CalendarIcon className="h-4 w-4 text-gray-400" />
+                    <span className="text-gray-600">Year:</span>
+                    <span className="font-medium">{product.yearOfManufacture}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-gray-600">Availability:</span>
-                  <span className="font-medium text-green-600">{product.availability}</span>
+                  <span className={`font-medium ${product.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {product.quantity > 0 ? `${product.quantity} available` : 'Out of stock'}
+                  </span>
                 </div>
+                {product.deliveryAvailable && (
+                  <div className="flex items-center gap-2 text-sm col-span-2">
+                    <TruckIcon className="h-4 w-4 text-gray-400" />
+                    <span className="text-gray-600">Delivery:</span>
+                    <span className="font-medium text-green-600">
+                      Available {product.deliveryFee > 0 ? `(₹${product.deliveryFee})` : '(Free)'}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Quantity and Actions */}
@@ -232,17 +296,24 @@ const ProductDetailPage = () => {
                     </button>
                     <span className="px-4 py-2 font-medium">{selectedQuantity}</span>
                     <button 
-                      onClick={() => setSelectedQuantity(selectedQuantity + 1)}
-                      className="px-3 py-2 hover:bg-gray-100 transition-colors duration-200"
+                      onClick={() => setSelectedQuantity(Math.min(product.quantity, selectedQuantity + 1))}
+                      disabled={selectedQuantity >= product.quantity}
+                      className="px-3 py-2 hover:bg-gray-100 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       +
                     </button>
                   </div>
+                  <span className="text-sm text-gray-500">
+                    {product.quantity} available
+                  </span>
                 </div>
 
                 <div className="flex gap-3">
-                  <button className="flex-1 bg-[#782355] text-white py-3 px-6 rounded-xl font-semibold hover:bg-[#8e2a63] transition-colors duration-200">
-                    Send Request
+                  <button 
+                    disabled={product.quantity === 0}
+                    className="flex-1 bg-[#782355] text-white py-3 px-6 rounded-xl font-semibold hover:bg-[#8e2a63] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {product.quantity === 0 ? 'Out of Stock' : 'Send Request'}
                   </button>
                   <button className="px-4 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors duration-200">
                     <HeartIcon className="h-6 w-6 text-gray-600" />
@@ -250,11 +321,36 @@ const ProductDetailPage = () => {
                 </div>
               </div>
 
-            
-
               {/* Seller Info */}
-              
-              
+              {product.userId && (
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <h3 className="font-semibold text-gray-900 mb-3">Seller Information</h3>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-[#782355] rounded-full flex items-center justify-center text-white font-semibold">
+                      {product.userId.name?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{product.userId.name || 'Unknown Seller'}</p>
+                      <p className="text-sm text-gray-600">@{product.userId.username || 'username'}</p>
+                      {product.userId.rating && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <StarSolidIcon className="h-4 w-4 text-yellow-400" />
+                          <span className="text-sm text-gray-600">{product.userId.rating}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <button className="flex-1 bg-[#782355] text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-[#8e2a63] transition-colors">
+                      Contact Seller
+                    </button>
+                    <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+                      View Profile
+                    </button>
+                  </div>
+                </div>
+              )}
+
             </div>
           </div>
 
@@ -262,17 +358,91 @@ const ProductDetailPage = () => {
           <div className="border-t border-gray-200 p-6 md:p-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Specifications</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {Object.entries(product.specifications).map(([key, value]) => (
-                <div key={key} className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-gray-600 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}:</span>
-                  <span className="font-medium text-gray-900">{value}</span>
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-gray-600">Category:</span>
+                <span className="font-medium text-gray-900">{product.productCategory}</span>
+              </div>
+              {product.brand && (
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Brand:</span>
+                  <span className="font-medium text-gray-900">{product.brand}</span>
                 </div>
-              ))}
+              )}
+              {product.model && (
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Model:</span>
+                  <span className="font-medium text-gray-900">{product.model}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-gray-600">Condition:</span>
+                <span className="font-medium text-gray-900">{product.condition}</span>
+              </div>
+              {product.yearOfManufacture && (
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Year of Manufacture:</span>
+                  <span className="font-medium text-gray-900">{product.yearOfManufacture}</span>
+                </div>
+              )}
+              {product.color && (
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Color:</span>
+                  <span className="font-medium text-gray-900">{product.color}</span>
+                </div>
+              )}
+              {product.material && (
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Material:</span>
+                  <span className="font-medium text-gray-900">{product.material}</span>
+                </div>
+              )}
+              {product.weight && (
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Weight:</span>
+                  <span className="font-medium text-gray-900">{product.weight} kg</span>
+                </div>
+              )}
+              {product.dimensions && (product.dimensions.length || product.dimensions.width || product.dimensions.height) && (
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Dimensions:</span>
+                  <span className="font-medium text-gray-900">
+                    {product.dimensions.length || 0} × {product.dimensions.width || 0} × {product.dimensions.height || 0} cm
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-gray-600">Original Packaging:</span>
+                <span className="font-medium text-gray-900">{product.originalPackaging ? 'Yes' : 'No'}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-gray-600">Manual Included:</span>
+                <span className="font-medium text-gray-900">{product.manualIncluded ? 'Yes' : 'No'}</span>
+              </div>
+              {product.workingConditionDescription && (
+                <div className="col-span-full py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Working Condition:</span>
+                  <p className="font-medium text-gray-900 mt-1">{product.workingConditionDescription}</p>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Features */}
-         
+          {/* Tags */}
+          {product.tags && product.tags.length > 0 && (
+            <div className="border-t border-gray-200 p-6 md:p-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Tags</h2>
+              <div className="flex flex-wrap gap-2">
+                {product.tags.map((tag, index) => (
+                  <span 
+                    key={index}
+                    className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

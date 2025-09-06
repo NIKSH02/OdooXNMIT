@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   AdjustmentsHorizontalIcon, 
   FunnelIcon, 
@@ -8,6 +8,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import ProductCard from '../components/landing/ProductCard';
+import productService from '../services/productService';
+import { useRetry } from '../hooks/useUtils';
 
 const AllProductsPage = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -16,168 +18,108 @@ const AllProductsPage = () => {
   const [selectedLocation, setSelectedLocation] = useState('All');
   const [sortBy, setSortBy] = useState('featured');
   const [showFilters, setShowFilters] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [pagination, setPagination] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const { retryCount, canRetry, retry, reset } = useRetry();
   const navigate = useNavigate();
 
-  const categories = ['All', 'Electronics', 'Furniture', 'Fashion', 'Sports', 'Books', 'Bikes'];
-  const conditions = ['All', 'New', 'Like New', 'Good', 'Fair'];
+  // Memoize priceRange to prevent infinite loops
+  const priceMin = priceRange[0];
+  const priceMax = priceRange[1];
+  const memoizedPriceRange = useMemo(() => [priceMin, priceMax], [priceMin, priceMax]);
+
+  const categories = [
+    'All', 
+    'Electronics & Appliances', 
+    'Furniture', 
+    'Fashion', 
+    'Books, Sports & Hobbies', 
+    'Bikes',
+    'Mobiles',
+    'Cars',
+    'Properties',
+    'Jobs',
+    'Commercial Vehicles & Spares',
+    'Pets',
+    'Services'
+  ];
+  const conditions = ['All', 'New', 'Used', 'Refurbished'];
   const locations = ['All', 'Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Pune', 'Hyderabad'];
   const sortOptions = [
     { value: 'featured', label: 'Featured' },
     { value: 'price-low', label: 'Price: Low to High' },
     { value: 'price-high', label: 'Price: High to Low' },
     { value: 'newest', label: 'Newest First' },
-    { value: 'rating', label: 'Highest Rated' },
-    { value: 'distance', label: 'Nearest to Me' }
+    { value: 'popular', label: 'Most Popular' },
+    { value: 'sold', label: 'Best Selling' }
   ];
 
-  // Extended sample products data
-  const allProducts = [
-    {
-      id: 1,
-      image: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1464&q=80",
-      title: "iPhone 13 Pro Max",
-      description: "Latest Apple iPhone with advanced camera system and A15 Bionic chip",
-      price: 85000,
-      originalPrice: 95000,
-      condition: "Like New",
-      location: "Mumbai",
-      yearOfManufacture: "2022",
-      brand: "Apple",
-      rating: 4.8,
-      reviews: 156,
-      category: "Electronics",
-      isNew: false,
-      seller: "TechStore Mumbai"
-    },
-    {
-      id: 2,
-      image: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2025&q=80",
-      title: "Modern Office Chair",
-      description: "Ergonomic office chair with lumbar support and adjustable height",
-      price: 12000,
-      originalPrice: 15000,
-      condition: "Good",
-      location: "Delhi",
-      yearOfManufacture: "2021",
-      brand: "Herman Miller",
-      rating: 4.5,
-      reviews: 89,
-      category: "Furniture",
-      isNew: false,
-      seller: "Furniture World"
-    },
-    {
-      id: 3,
-      image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-      title: "Nike Air Max 270",
-      description: "Comfortable running shoes with maximum air cushioning",
-      price: 8500,
-      originalPrice: null,
-      condition: "New",
-      location: "Bangalore",
-      yearOfManufacture: "2023",
-      brand: "Nike",
-      rating: 4.7,
-      reviews: 234,
-      category: "Fashion",
-      isNew: true,
-      seller: "SportZone"
-    },
-    {
-      id: 4,
-      image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-      title: "MacBook Pro M2",
-      description: "Apple MacBook Pro with M2 chip, 16GB RAM, 512GB SSD",
-      price: 185000,
-      originalPrice: 200000,
-      condition: "Like New",
-      location: "Pune",
-      yearOfManufacture: "2023",
-      brand: "Apple",
-      rating: 4.9,
-      reviews: 67,
-      category: "Electronics",
-      isNew: false,
-      seller: "Apple Store"
-    },
-    {
-      id: 5,
-      image: "https://images.unsplash.com/photo-1544966503-7cc5ac882d5d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-      title: "Mountain Bike Trek",
-      description: "Professional mountain bike with 21-speed gear system",
-      price: 45000,
-      originalPrice: 50000,
-      condition: "Good",
-      location: "Chennai",
-      yearOfManufacture: "2022",
-      brand: "Trek",
-      rating: 4.6,
-      reviews: 45,
-      category: "Bikes",
-      isNew: false,
-      seller: "Cycle World"
-    },
-    {
-      id: 6,
-      image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-      title: "Dining Table Set",
-      description: "6-seater wooden dining table with chairs",
-      price: 35000,
-      originalPrice: 42000,
-      condition: "Good",
-      location: "Hyderabad",
-      yearOfManufacture: "2021",
-      brand: "IKEA",
-      rating: 4.4,
-      reviews: 78,
-      category: "Furniture",
-      isNew: false,
-      seller: "Home Decor"
-    },
-    {
-      id: 7,
-      image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-      title: "Samsung Galaxy S23",
-      description: "Latest Samsung flagship with incredible camera and performance",
-      price: 65000,
-      originalPrice: 75000,
-      condition: "New",
-      location: "Mumbai",
-      yearOfManufacture: "2023",
-      brand: "Samsung",
-      rating: 4.7,
-      reviews: 198,
-      category: "Electronics",
-      isNew: true,
-      seller: "Mobile Hub"
-    },
-    {
-      id: 8,
-      image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-      title: "Beats Studio Buds",
-      description: "Wireless noise-cancelling earbuds with spatial audio",
-      price: 12000,
-      originalPrice: 15000,
-      condition: "Like New",
-      location: "Delhi",
-      yearOfManufacture: "2022",
-      brand: "Beats",
-      rating: 4.5,
-      reviews: 312,
-      category: "Electronics",
-      isNew: false,
-      seller: "Audio Pro"
-    }
-  ];
+  // Fetch products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const params = {
+          page: currentPage,
+          limit: 12,
+          sortBy: sortBy === 'featured' ? 'viewCount' : 
+                 sortBy === 'price-low' ? 'price' :
+                 sortBy === 'price-high' ? 'price' :
+                 sortBy === 'newest' ? 'createdAt' :
+                 sortBy === 'popular' ? 'viewCount' :
+                 sortBy === 'sold' ? 'soldCount' : 'viewCount',
+          sortOrder: sortBy === 'price-high' ? 'desc' : 
+                    sortBy === 'newest' ? 'desc' : 
+                    sortBy === 'featured' || sortBy === 'popular' || sortBy === 'sold' ? 'desc' : 'asc'
+        };
 
-  const filteredProducts = allProducts.filter(product => {
-    const categoryMatch = selectedCategory === 'All' || product.category === selectedCategory;
-    const conditionMatch = selectedCondition === 'All' || product.condition === selectedCondition;
-    const priceMatch = product.price >= priceRange[0] && product.price <= priceRange[1];
-    const locationMatch = selectedLocation === 'All' || product.location.includes(selectedLocation);
-    
-    return categoryMatch && conditionMatch && priceMatch && locationMatch;
-  });
+        if (selectedCategory !== 'All') {
+          params.productCategory = selectedCategory;
+        }
+
+        if (selectedCondition !== 'All') {
+          params.condition = selectedCondition;
+        }
+
+        if (memoizedPriceRange[0] > 0 || memoizedPriceRange[1] < 200000) {
+          params.minPrice = memoizedPriceRange[0];
+          params.maxPrice = memoizedPriceRange[1];
+        }
+
+        const response = await productService.getAllProducts(params);
+        
+        if (currentPage === 1) {
+          setProducts(response.data.products || []);
+        } else {
+          // Append new products for pagination
+          setProducts(prev => [...prev, ...(response.data.products || [])]);
+        }
+        
+        setPagination(response.data.pagination || {});
+        reset(); // Reset retry count on successful fetch
+      } catch (err) {
+        console.error('Error fetching products:', err);
+        setError(err.response?.data?.message || 'Failed to load products');
+        if (currentPage === 1) {
+          setProducts([]);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [selectedCategory, selectedCondition, memoizedPriceRange, sortBy, currentPage, retryCount, reset]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory, selectedCondition, memoizedPriceRange, sortBy]);
 
   const clearFilters = () => {
     setSelectedCategory('All');
@@ -185,11 +127,26 @@ const AllProductsPage = () => {
     setPriceRange([0, 200000]);
     setSelectedLocation('All');
     setSortBy('featured');
+    setCurrentPage(1);
   };
 
   const handleViewDetails = (product) => {
-    navigate(`/product/${product.id}`);
+    navigate(`/product/${product.id || product._id}`);
   };
+
+  const loadMoreProducts = () => {
+    if (pagination.hasNext) {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
+
+  if (loading && currentPage === 1) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#782355]"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -210,7 +167,7 @@ const AllProductsPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900">All Products</h1>
-              <p className="text-gray-600 mt-1">{filteredProducts.length} products found</p>
+              <p className="text-gray-600 mt-1">{products.length} products found</p>
             </div>
             
             {/* Mobile Filter Toggle */}
@@ -241,7 +198,7 @@ const AllProductsPage = () => {
                   </button>
                 </div>
 
-                <div className="bg-white lg:bg-white rounded-xl lg:rounded-none p-6 lg:p-0 shadow-lg lg:shadow-none">
+                <div className="bg-white lg:bg-white rounded-xl lg:rounded-lg p-6 lg:p-4 shadow-lg lg:shadow-none">
                   <div className="hidden lg:flex items-center justify-between mb-6">
                     <h3 className="text-lg font-semibold flex items-center">
                       <AdjustmentsHorizontalIcon className="h-5 w-5 mr-2" />
@@ -375,18 +332,30 @@ const AllProductsPage = () => {
                 </div>
 
                 <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <span>Showing {filteredProducts.length} of {allProducts.length} products</span>
+                  <span>Showing {products.length} of {pagination.total || products.length} products</span>
                 </div>
               </div>
             </div>
 
             {/* Products Grid */}
-            {filteredProducts.length > 0 ? (
+            {products.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredProducts.map((product) => (
+                {products.map((product) => (
                   <ProductCard
-                    key={product.id}
-                    product={product}
+                    key={product._id}
+                    product={{
+                      id: product._id,
+                      image: product.imageUrls?.[0] || product.imageUrl,
+                      title: product.productTitle,
+                      description: product.productDescription,
+                      price: product.price,
+                      condition: product.condition,
+                      location: product.location?.address || 'Location not specified',
+                      yearOfManufacture: product.yearOfManufacture,
+                      brand: product.brand,
+                      category: product.productCategory,
+                      seller: product.userId?.name || 'Unknown Seller'
+                    }}
                     onViewDetails={handleViewDetails}
                   />
                 ))}
@@ -410,10 +379,31 @@ const AllProductsPage = () => {
             )}
 
             {/* Load More Button */}
-            {filteredProducts.length > 0 && (
+            {products.length > 0 && pagination.hasNext && (
               <div className="text-center mt-12">
-                <button className="bg-[#782355] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#8e2a63] transition-colors duration-200">
-                  Load More Products
+                <button 
+                  onClick={loadMoreProducts}
+                  disabled={loading}
+                  className="bg-[#782355] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#8e2a63] transition-colors duration-200 disabled:opacity-50"
+                >
+                  {loading ? 'Loading...' : 'Load More Products'}
+                </button>
+              </div>
+            )}
+
+            {/* Error State */}
+            {error && (
+              <div className="text-center py-12">
+                <p className="text-red-600 mb-4">{error}</p>
+                <button 
+                  onClick={() => {
+                    setError(null);
+                    retry();
+                  }}
+                  disabled={!canRetry}
+                  className="bg-[#782355] text-white px-6 py-2 rounded-lg hover:bg-[#8e2a63] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {canRetry ? 'Try Again' : 'Max Retries Reached'}
                 </button>
               </div>
             )}
