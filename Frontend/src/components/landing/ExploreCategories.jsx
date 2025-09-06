@@ -99,14 +99,7 @@ const ExploreCategories = () => {
         </div>
 
         {/* View All Categories Button */}
-        <div className="text-center mt-12">
-          <button className="inline-flex items-center px-8 py-3 bg-[#782355] text-white font-semibold rounded-xl hover:bg-[#8e2a63] transition-all duration-300 transform hover:scale-105 hover:shadow-lg">
-            <span>View All Categories</span>
-            <svg className="ml-2 w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
+      
       </div>
     </section>
   );

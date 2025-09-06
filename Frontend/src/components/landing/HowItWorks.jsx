@@ -64,10 +64,11 @@ const HowItWorks = () => {
             {steps.map((step, index) => (
               <div
                 key={step.id}
-                className={`relative group ${step.delay}`}
+                className={`relative group flex flex-col h-full ${step.delay}`}
+                style={{ minHeight: '370px' }}
               >
                 {/* Step Card */}
-                <div className="bg-white rounded-3xl p-6 md:p-8 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 border border-gray-100">
+                <div className="flex flex-col h-full bg-white rounded-3xl p-6 md:p-8 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 border border-gray-100 w-full min-w-[250px] max-w-[320px] mx-auto" style={{ minHeight: '370px' }}>
                   {/* Step Number */}
                   <div className="absolute -top-4 left-6">
                     <div className="w-8 h-8 bg-[#782355] text-white rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
@@ -84,7 +85,7 @@ const HowItWorks = () => {
                   <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 group-hover:text-[#782355] transition-colors duration-300">
                     {step.title}
                   </h3>
-                  <p className="text-gray-600 text-sm md:text-base leading-relaxed">
+                  <p className="text-gray-600 text-sm md:text-base leading-relaxed flex-1">
                     {step.description}
                   </p>
 
