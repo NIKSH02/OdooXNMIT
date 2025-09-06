@@ -5,8 +5,13 @@ import {
   ShoppingBagIcon, 
   ChatBubbleLeftRightIcon 
 } from '@heroicons/react/24/outline';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 const HowItWorks = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  
   const steps = [
     {
       id: 1,
@@ -108,25 +113,33 @@ const HowItWorks = () => {
           </div>
         </div>
 
-        {/* Call to Action */}
-        <div className="text-center mt-16">
-          <div className="bg-gradient-to-r from-[#782355] to-purple-600 rounded-3xl p-8 md:p-12 text-white">
-            <h3 className="text-2xl md:text-3xl font-bold mb-4">
-              Ready to Get Started?
-            </h3>
-            <p className="text-lg md:text-xl mb-8 opacity-90">
-              Join thousands of users who are already making a difference
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="bg-white text-[#782355] px-8 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors duration-200 transform hover:scale-105">
-                Sign Up Now
-              </button>
-              <button className="border-2 border-white text-white px-8 py-3 rounded-xl font-semibold hover:bg-white hover:text-[#782355] transition-all duration-200 transform hover:scale-105">
-                Learn More
-              </button>
+        {/* Call to Action - Only show if user is not authenticated */}
+        {!isAuthenticated && (
+          <div className="text-center mt-16">
+            <div className="bg-gradient-to-r from-[#782355] to-purple-600 rounded-3xl p-8 md:p-12 text-white">
+              <h3 className="text-2xl md:text-3xl font-bold mb-4">
+                Ready to Get Started?
+              </h3>
+              <p className="text-lg md:text-xl mb-8 opacity-90">
+                Join thousands of users who are already making a difference
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button 
+                  onClick={() => navigate('/authpage')}
+                  className="bg-white text-[#782355] px-8 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors duration-200 transform hover:scale-105"
+                >
+                  Sign Up Now
+                </button>
+                <button 
+                  onClick={() => navigate('/products')}
+                  className="border-2 border-white text-white px-8 py-3 rounded-xl font-semibold hover:bg-white hover:text-[#782355] transition-all duration-200 transform hover:scale-105"
+                >
+                  Learn More
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   );

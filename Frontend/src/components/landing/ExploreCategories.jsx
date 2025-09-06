@@ -1,6 +1,14 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const ExploreCategories = () => {
+  const navigate = useNavigate();
+
+  const handleCategoryClick = (categoryName) => {
+    // Navigate to all products page with category filter
+    navigate(`/products?category=${encodeURIComponent(categoryName)}`);
+  };
+
   const categories = [
     {
       id: 1,
@@ -62,6 +70,7 @@ const ExploreCategories = () => {
           {categories.map((category) => (
             <div
               key={category.id}
+              onClick={() => handleCategoryClick(category.name)}
               className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${category.bgColor} ${category.hoverColor} 
                          p-6 md:p-8 text-center cursor-pointer transform transition-all duration-300 
                          hover:scale-105 hover:shadow-2xl hover:-translate-y-2`}
@@ -99,6 +108,14 @@ const ExploreCategories = () => {
         </div>
 
         {/* View All Categories Button */}
+        <div className="text-center mt-12">
+          <button
+            onClick={() => navigate('/products')}
+            className="bg-[#782355] text-white px-8 py-3 rounded-2xl font-semibold hover:bg-[#8e2a63] transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+          >
+            View All Products
+          </button>
+        </div>
       
       </div>
     </section>

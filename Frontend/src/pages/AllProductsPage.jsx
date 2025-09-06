@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   AdjustmentsHorizontalIcon, 
   FunnelIcon, 
@@ -6,21 +6,33 @@ import {
   ChevronDownIcon,
   ChevronLeftIcon 
 } from '@heroicons/react/24/outline';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import ProductCard from '../components/landing/ProductCard';
 import Navbar from '../components/landing/Navbar';
 import Footer from '../components/landing/Footer';
 
 const AllProductsPage = () => {
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  
+  // Get category from URL params
+  const categoryFromUrl = searchParams.get('category');
+  
+  const [selectedCategory, setSelectedCategory] = useState(categoryFromUrl || 'All');
   const [selectedCondition, setSelectedCondition] = useState('All');
   const [priceRange, setPriceRange] = useState([0, 200000]);
   const [selectedLocation, setSelectedLocation] = useState('All');
   const [sortBy, setSortBy] = useState('featured');
   const [showFilters, setShowFilters] = useState(false);
-  const navigate = useNavigate();
 
-  const categories = ['All', 'Electronics', 'Furniture', 'Fashion', 'Sports', 'Books', 'Bikes'];
+  // Update selected category when URL changes
+  useEffect(() => {
+    if (categoryFromUrl) {
+      setSelectedCategory(categoryFromUrl);
+    }
+  }, [categoryFromUrl]);
+
+  const categories = ['All', 'Electronics', 'Furniture', 'Fashion', 'Sports', 'Books', 'Sports & Books', 'Bikes'];
   const conditions = ['All', 'New', 'Like New', 'Good', 'Fair'];
   const locations = ['All', 'Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Pune', 'Hyderabad'];
   const sortOptions = [
@@ -169,11 +181,89 @@ const AllProductsPage = () => {
       category: "Electronics",
       isNew: false,
       seller: "Audio Pro"
+    },
+    {
+      id: 9,
+      image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+      title: "Football & Soccer Ball",
+      description: "Professional quality football for outdoor sports",
+      price: 1500,
+      originalPrice: 2000,
+      condition: "Good",
+      location: "Mumbai",
+      yearOfManufacture: "2022",
+      brand: "Nike",
+      rating: 4.3,
+      reviews: 85,
+      category: "Sports",
+      isNew: false,
+      seller: "Sports Arena"
+    },
+    {
+      id: 10,
+      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+      title: "Basketball Premium",
+      description: "High-quality basketball for professional games",
+      price: 2500,
+      originalPrice: 3000,
+      condition: "Like New",
+      location: "Bangalore",
+      yearOfManufacture: "2023",
+      brand: "Spalding",
+      rating: 4.6,
+      reviews: 124,
+      category: "Sports",
+      isNew: false,
+      seller: "Court Masters"
+    },
+    {
+      id: 11,
+      image: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+      title: "Programming Books Set",
+      description: "Collection of programming books including JavaScript, Python, React",
+      price: 3500,
+      originalPrice: 5000,
+      condition: "Good",
+      location: "Delhi",
+      yearOfManufacture: "2021",
+      brand: "O'Reilly",
+      rating: 4.8,
+      reviews: 67,
+      category: "Books",
+      isNew: false,
+      seller: "BookWorm"
+    },
+    {
+      id: 12,
+      image: "https://images.unsplash.com/photo-1512820790803-83ca734da794?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+      title: "Classic Literature Collection",
+      description: "Set of classic literature books including Shakespeare, Dickens",
+      price: 2800,
+      originalPrice: 4000,
+      condition: "Good",
+      location: "Chennai",
+      yearOfManufacture: "2020",
+      brand: "Penguin Classics",
+      rating: 4.7,
+      reviews: 92,
+      category: "Books",
+      isNew: false,
+      seller: "Classic Reads"
     }
   ];
 
   const filteredProducts = allProducts.filter(product => {
-    const categoryMatch = selectedCategory === 'All' || product.category === selectedCategory;
+    let categoryMatch = false;
+    
+    if (selectedCategory === 'All') {
+      categoryMatch = true;
+    } else if (selectedCategory === 'Sports & Books') {
+      // Handle the combined category from ExploreCategories
+      categoryMatch = product.category === 'Sports' || product.category === 'Books';
+    } else {
+      categoryMatch = product.category === selectedCategory;
+    }
+    
     const conditionMatch = selectedCondition === 'All' || product.condition === selectedCondition;
     const priceMatch = product.price >= priceRange[0] && product.price <= priceRange[1];
     const locationMatch = selectedLocation === 'All' || product.location.includes(selectedLocation);
@@ -187,6 +277,8 @@ const AllProductsPage = () => {
     setPriceRange([0, 200000]);
     setSelectedLocation('All');
     setSortBy('featured');
+    // Clear URL parameters
+    navigate('/products', { replace: true });
   };
 
   const handleViewDetails = (product) => {
