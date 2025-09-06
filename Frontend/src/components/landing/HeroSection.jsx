@@ -4,6 +4,17 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 const HeroSection = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
 
+  const handleExploreClick = () => {
+    // Smooth scroll to the explore categories section
+    const exploreSection = document.getElementById('explore-categories');
+    if (exploreSection) {
+      exploreSection.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  };
+
   const slides = [
     {
       id: 1,
@@ -84,7 +95,10 @@ const HeroSection = () => {
                 <p className="text-lg md:text-xl lg:text-2xl mb-8 animate-fade-in-up animation-delay-200">
                   {slide.subtitle}
                 </p>
-                <button className="bg-white text-[#782355] px-8 py-3 md:px-10 md:py-4 rounded-full font-semibold text-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 animate-fade-in-up animation-delay-400">
+                <button 
+                  onClick={handleExploreClick}
+                  className="bg-white text-[#782355] px-8 py-3 md:px-10 md:py-4 rounded-full font-semibold text-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 animate-fade-in-up animation-delay-400"
+                >
                   Explore Now
                 </button>
               </div>

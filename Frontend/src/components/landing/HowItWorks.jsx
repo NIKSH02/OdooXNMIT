@@ -3,7 +3,7 @@ import {
   UserPlusIcon, 
   MagnifyingGlassIcon, 
   ShoppingBagIcon, 
-  ChatBubbleLeftRightIcon 
+  ShoppingCartIcon 
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -31,9 +31,9 @@ const HowItWorks = () => {
     },
     {
       id: 3,
-      icon: ChatBubbleLeftRightIcon,
-      title: "Connect & Negotiate",
-      description: "Connect with sellers, negotiate prices, and arrange secure transactions",
+      icon: ShoppingCartIcon,
+      title: "Add to Cart & Buy",
+      description: "Add items to your cart and complete secure purchases with ease",
       color: "from-yellow-400 to-yellow-600",
       delay: "animate-fade-in-up animation-delay-400"
     },
