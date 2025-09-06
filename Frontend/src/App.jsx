@@ -8,6 +8,8 @@ import {
   Navigate,
 } from "react-router-dom";
 import { useAuth } from "./hooks/useAuth";
+import AllProductsPage from "./pages/AllProductsPage";
+import LandingPage from "./pages/LandingPage";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -73,6 +75,8 @@ function App() {
                 <Routes>
                   {/* Public Routes - No authentication required */}
                   <Route path="/authpage" element={<AuthPage />} />
+                  <Route path='/' element={<LandingPage /> } />
+                  <Route path="/products" element={<AllProductsPage /> } />
                   {/* Protected Routes - Authentication required */}
                 </Routes>
               </Router>

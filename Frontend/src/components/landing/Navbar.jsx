@@ -6,9 +6,27 @@ import {
   Bars3Icon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 const Navbar = () => {
+
+  const login = localStorage.getItem("accessToken");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isAuthenticated, logout, user } = useAuth();
+  console.log('nav', isAuthenticated)
+
+  const navigate = useNavigate();
+
+    const handleLogout = async () => {
+    try {
+      await logout();
+      // The AuthContext will handle clearing tokens and state
+      window.location.reload(); // Optional: refresh to update UI
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   return (
     <nav className="bg-white shadow-lg sticky top-0 z-50">
@@ -43,12 +61,16 @@ const Navbar = () => {
               <UserIcon className="h-6 w-6 mr-1" />
               <span>Dashboard</span>
             </button>
-            <button className="px-4 py-2 text-[#782355] border border-[#782355] rounded-lg hover:bg-[#782355] hover:text-white transition-colors duration-200">
-              Sign In
-            </button>
-            <button className="px-4 py-2 bg-[#782355] text-white rounded-lg hover:bg-[#8e2a63] transition-colors duration-200">
-              Sign Up
-            </button>
+             { isAuthenticated != true ? 
+                (
+                <button onClick={() => navigate('/authpage')} className="px-4 py-2 text-[#782355] border border-[#782355] rounded-lg hover:bg-[#782355] hover:text-white transition-colors duration-200">
+                  Sign In
+                </button>
+                ) : (
+                <button onClick={logout} className="px-4 py-2 text-[#782355] border border-[#782355] rounded-lg hover:bg-[#782355] hover:text-white transition-colors duration-200">
+                  Logout
+                </button>
+                )}
           </div>
 
           {/* Mobile menu button */}
@@ -92,12 +114,16 @@ const Navbar = () => {
               Dashboard
             </button>
             <div className="space-y-2 pt-2">
-              <button className="w-full px-3 py-2 text-[#782355] border border-[#782355] rounded-lg hover:bg-[#782355] hover:text-white transition-colors duration-200">
-                Sign In
-              </button>
-              <button className="w-full px-3 py-2 bg-[#782355] text-white rounded-lg hover:bg-[#8e2a63] transition-colors duration-200">
-                Sign Up
-              </button>
+              { login != null ? 
+                (
+                <button onClick={() => navigate('/authpage')} className="px-4 py-2 text-[#782355] border border-[#782355] rounded-lg hover:bg-[#782355] hover:text-white transition-colors duration-200">
+                  Sign In
+                </button>):
+                (
+                <button onClick={handleLogout} className="px-4 py-2 text-[#782355] border border-[#782355] rounded-lg hover:bg-[#782355] hover:text-white transition-colors duration-200">
+                  Logout
+                </button>
+                )}
             </div>
           </div>
         </div>
