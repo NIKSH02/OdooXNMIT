@@ -183,7 +183,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
   const isLoading = authLoading || localLoading;
 
   return (
-    <div className="bg-white shadow-lg rounded-xl p-6 md:p-8 w-full max-w-md border border-orange-100">
+    <div className="bg-white shadow-lg rounded-xl p-6 md:p-8 w-full max-w-md border border-[#782355]">
       <h2 className="text-2xl font-bold mb-6 text-gray-800 text-center md:text-left">
         {isLogin ? "Sign in" : "Sign up"}
       </h2>
@@ -201,7 +201,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
             console.log("Username/Email changed:", e.target.value);
             setUsername(e.target.value);
           }}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#782355] focus:border-[#782355]"
         />
       </div>
 
@@ -219,7 +219,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
               placeholder="••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#782355] focus:border-[#782355]"
             />
             <button
               type="button"
@@ -261,7 +261,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
                 setEmail(e.target.value);
               }}
               disabled={isEmailVerified}
-              className={`flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+              className={`flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#782355] focus:border-[#782355] ${
                 isEmailVerified ? "bg-green-50 border-green-300" : ""
               }`}
             />
@@ -270,7 +270,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
                 type="button"
                 onClick={handleSendVerification}
                 disabled={!email || !email.includes("@")}
-                className="px-3 md:px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition text-xs md:text-sm whitespace-nowrap"
+                className="px-3 md:px-4 py-2 bg-gradient-to-r from-[#782355] to-[#5e1942] text-white rounded-lg hover:from-[#782355] hover:to-[#5e1942] disabled:bg-gray-300 disabled:cursor-not-allowed transition text-xs md:text-sm whitespace-nowrap"
               >
                 Verify
               </button>
@@ -297,7 +297,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
                 <button
                   type="button"
                   onClick={handleResendOtp}
-                  className="text-xs text-orange-600 hover:text-orange-800 hover:underline mt-1 cursor-pointer font-medium bg-orange-50 hover:bg-orange-100 px-2 py-1 rounded transition-all"
+                  className="text-xs text-[#782355] hover:text-[#5e1942] hover:underline mt-1 cursor-pointer font-medium bg-[#782355] hover:bg-[#78355d] px-2 py-1 rounded transition-all"
                 >
                   Didn't receive OTP? Resend
                 </button>
@@ -327,7 +327,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
               onChange={(e) =>
                 setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
               }
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#782355] focus:border-[#782355]"
               maxLength={6}
             />
             <button
@@ -366,7 +366,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
               placeholder="••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#782355] focus:border-[#782355]"
             />
             <button
               type="button"
@@ -386,7 +386,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
           onClick={isLogin ? handleLoginWithPassword : handleSignup}
           className={`w-full py-3 rounded-lg transition font-medium flex items-center justify-center gap-2 ${
             (isLogin ? isSigninEnabled : isSignupEnabled) && !isLoading
-              ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 transform hover:scale-[1.02]"
+              ? "bg-gradient-to-r from-[#782355] to-[#5e1942] text-white hover:from-[#5e1942] hover:to-[#5e1942] transform hover:scale-[1.02]"
               : "bg-gray-300 text-gray-500 cursor-not-allowed"
           }`}
         >
@@ -416,7 +416,7 @@ export default function AuthForm({ isLogin = true, onToggle, onSuccess }) {
         {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
         <button
           onClick={handleToggleAuth}
-          className="text-orange-600 hover:text-orange-800 font-medium hover:underline disabled:text-gray-400 disabled:cursor-not-allowed"
+          className="text-[#782355] hover:text-[#5e1942] font-medium hover:underline disabled:text-gray-400 disabled:cursor-not-allowed"
           disabled={
             isLoading ||
             isVerifyingOtp ||

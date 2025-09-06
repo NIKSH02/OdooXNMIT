@@ -4,7 +4,8 @@ import {
   ShoppingCartIcon, 
   UserIcon, 
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  PlusIcon
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -184,10 +185,10 @@ const Navbar = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-6">
+          <div className=" hidden md:flex items-center space-x-6">
             <button 
               onClick={() => navigate('/cart')}
-              className="flex items-center text-gray-700 hover:text-[#782355] transition-colors duration-200 relative"
+              className="!cursor-pointer flex items-center text-gray-700 hover:text-[#782355] transition-colors duration-200 relative"
             >
               <ShoppingCartIcon className="h-6 w-6 mr-1" />
               <span>Cart</span>
@@ -199,18 +200,25 @@ const Navbar = () => {
             </button>
             <button 
               onClick={() => navigate('/dashboard')}
-              className="flex items-center text-gray-700 hover:text-[#782355] transition-colors duration-200"
+              className="!cursor-pointer flex items-center text-gray-700 hover:text-[#782355] transition-colors duration-200"
             >
               <UserIcon className="h-6 w-6 mr-1" />
               <span>Dashboard</span>
             </button>
+            <button 
+              onClick={() => navigate('/add-item')}
+              className=" !cursor-pointer flex items-center text-gray-700 hover:text-[#782355] transition-colors duration-200"
+            >
+              <PlusIcon className='h-6 w-6 mr-1' />
+              <span>Sell</span>
+            </button>
              { isAuthenticated != true ? 
                 (
-                <button onClick={() => navigate('/authpage')} className="px-4 py-2 text-[#782355] border border-[#782355] rounded-lg hover:bg-[#782355] hover:text-white transition-colors duration-200">
+                <button onClick={() => navigate('/authpage')} className="!cursor-pointer px-4 py-2 text-[#782355] border border-[#782355] rounded-lg hover:bg-[#782355] hover:text-white transition-colors duration-200">
                   Sign In
                 </button>
                 ) : (
-                <button onClick={logout} className="px-4 py-2 text-[#782355] border border-[#782355] rounded-lg hover:bg-[#782355] hover:text-white transition-colors duration-200">
+                <button onClick={logout} className="!cursor-pointer px-4 py-2 text-[#782355] border border-[#782355] rounded-lg hover:bg-[#782355] hover:text-white transition-colors duration-200">
                   Logout
                 </button>
                 )}
@@ -295,6 +303,13 @@ const Navbar = () => {
             >
               <UserIcon className="h-5 w-5 mr-3" />
               Dashboard
+            </button>
+            <button 
+              onClick={() => navigate('/add-item')}
+              className="flex items-center w-full px-3 py-2 text-gray-700 hover:text-[#782355] hover:bg-gray-50 rounded-md transition-colors duration-200"
+            >
+              <PlusIcon className='h-6 w-6 mr-1' />
+              <span>Sell</span>
             </button>
             <div className="space-y-2 pt-2">
               { isAuthenticated != true ? 
