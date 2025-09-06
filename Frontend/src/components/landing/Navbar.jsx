@@ -8,12 +8,14 @@ import {
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../hooks/useCart';
 
 const Navbar = () => {
 
   const login = localStorage.getItem("accessToken");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { isAuthenticated, logout, user } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
+  const { getCartItemsCount } = useCart();
   console.log('nav', isAuthenticated)
 
   const navigate = useNavigate();
@@ -35,7 +37,12 @@ const Navbar = () => {
           {/* Logo */}
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <h1 className="text-2xl font-bold text-[#782355]">EcoFinds</h1>
+              <button 
+                onClick={() => navigate('/')}
+                className="text-2xl font-bold text-[#782355] hover:text-[#8b2e5f] transition-colors duration-200 cursor-pointer"
+              >
+                EcoFinds
+              </button>
             </div>
           </div>
 
@@ -53,11 +60,22 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-6">
-            <button className="flex items-center text-gray-700 hover:text-[#782355] transition-colors duration-200">
+            <button 
+              onClick={() => navigate('/cart')}
+              className="flex items-center text-gray-700 hover:text-[#782355] transition-colors duration-200 relative"
+            >
               <ShoppingCartIcon className="h-6 w-6 mr-1" />
               <span>Cart</span>
+              {getCartItemsCount() > 0 && (
+                <span className="absolute -top-2 -right-2 bg-[#782355] text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {getCartItemsCount()}
+                </span>
+              )}
             </button>
-            <button className="flex items-center text-gray-700 hover:text-[#782355] transition-colors duration-200">
+            <button 
+              onClick={() => navigate('/dashboard')}
+              className="flex items-center text-gray-700 hover:text-[#782355] transition-colors duration-200"
+            >
               <UserIcon className="h-6 w-6 mr-1" />
               <span>Dashboard</span>
             </button>
@@ -105,11 +123,22 @@ const Navbar = () => {
       {isMenuOpen && (
         <div className="md:hidden bg-white border-t border-gray-200">
           <div className="px-2 pt-2 pb-3 space-y-1">
-            <button className="flex items-center w-full px-3 py-2 text-gray-700 hover:text-[#782355] hover:bg-gray-50 rounded-md transition-colors duration-200">
+            <button 
+              onClick={() => navigate('/cart')}
+              className="flex items-center w-full px-3 py-2 text-gray-700 hover:text-[#782355] hover:bg-gray-50 rounded-md transition-colors duration-200 relative"
+            >
               <ShoppingCartIcon className="h-5 w-5 mr-3" />
               Cart
+              {getCartItemsCount() > 0 && (
+                <span className="absolute left-8 -top-1 bg-[#782355] text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                  {getCartItemsCount()}
+                </span>
+              )}
             </button>
-            <button className="flex items-center w-full px-3 py-2 text-gray-700 hover:text-[#782355] hover:bg-gray-50 rounded-md transition-colors duration-200">
+            <button 
+              onClick={() => navigate('/dashboard')}
+              className="flex items-center w-full px-3 py-2 text-gray-700 hover:text-[#782355] hover:bg-gray-50 rounded-md transition-colors duration-200"
+            >
               <UserIcon className="h-5 w-5 mr-3" />
               Dashboard
             </button>
