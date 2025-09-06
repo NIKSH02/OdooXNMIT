@@ -85,6 +85,7 @@ function App() {
               <Route path='/' element={<LandingPage />} />
               <Route path="/products" element={<AllProductsPage />} />
               <Route path="/product/:id" element={<ProductDetailPage />} />
+              <Route path="/search" element={<SearchResults />} />
               <Route path="/cart" element={<CartPage />} />
               
               {/* Protected Routes - Authentication required */}

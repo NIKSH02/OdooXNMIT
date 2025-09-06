@@ -477,7 +477,7 @@ const SearchResults = () => {
                         </div>
 
                         {/* View Details Button */}
-                        <button className="w-full bg-[#9d174d] text-white py-2 px-4 rounded-lg font-medium hover:bg-[#7f1d1d] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#9d174d] focus:ring-offset-2">
+                        <button onClick={() => navigate(`/product/${item._id}`)} className="w-full bg-[#9d174d] text-white py-2 px-4 rounded-lg font-medium hover:bg-[#7f1d1d] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#9d174d] focus:ring-offset-2">
                           View Details
                         </button>
                       </div>
