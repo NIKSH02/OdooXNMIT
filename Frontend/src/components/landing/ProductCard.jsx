@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StarIcon, EyeIcon } from '@heroicons/react/24/solid';
 import { MapPinIcon, CalendarIcon, TagIcon } from '@heroicons/react/24/outline';
+import PlaceholderImage from '../common/PlaceholderImage';
 
 const ProductCard = ({ product, onViewDetails }) => {
+  const [imageError, setImageError] = useState(false);
   const {
     image,
     title,
@@ -28,11 +30,19 @@ const ProductCard = ({ product, onViewDetails }) => {
     <div className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-gray-100">
       {/* Image Container */}
       <div className="relative overflow-hidden">
-        <img
-          src={image}
-          alt={title}
-          className="w-full h-48 md:h-56 object-cover transition-transform duration-300 group-hover:scale-110"
-        />
+        {image && !imageError ? (
+          <img
+            src={image}
+            alt={title}
+            onError={() => setImageError(true)}
+            className="w-full h-48 md:h-56 object-cover transition-transform duration-300 group-hover:scale-110"
+          />
+        ) : (
+          <PlaceholderImage 
+            className="w-full h-48 md:h-56" 
+            category={category}
+          />
+        )}
         
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-2">
