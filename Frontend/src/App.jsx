@@ -10,6 +10,7 @@ import {
 import { useAuth } from "./hooks/useAuth";
 import AllProductsPage from "./pages/AllProductsPage";
 import LandingPage from "./pages/LandingPage";
+import SearchResults from "./pages/SearchResults";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -77,6 +78,7 @@ function App() {
                   <Route path="/authpage" element={<AuthPage />} />
                   <Route path='/' element={<LandingPage /> } />
                   <Route path="/products" element={<AllProductsPage /> } />
+                  <Route path="/search" element={<SearchResults />} />
                   {/* Protected Routes - Authentication required */}
                 </Routes>
               </Router>

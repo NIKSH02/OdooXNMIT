@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   MagnifyingGlassIcon, 
   ShoppingCartIcon, 
@@ -8,17 +8,21 @@ import {
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { searchItems, getSearchSuggestions } from '../../services/searchService';
 
 const Navbar = () => {
-
-  const login = localStorage.getItem("accessToken");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { isAuthenticated, logout, user } = useAuth();
-  console.log('nav', isAuthenticated)
-
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const { isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const searchRef = useRef(null);
+  const suggestionsRef = useRef(null);
 
-    const handleLogout = async () => {
+  const handleLogout = async () => {
     try {
       await logout();
       // The AuthContext will handle clearing tokens and state
@@ -27,6 +31,93 @@ const Navbar = () => {
       console.error("Logout error:", error);
     }
   };
+
+  // Handle search input changes and get suggestions
+  const handleSearchInputChange = async (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+
+    if (value.trim().length >= 2) {
+      try {
+        const response = await getSearchSuggestions(value.trim());
+        if (response.success) {
+          setSuggestions(response.data.suggestions);
+          setShowSuggestions(true);
+        }
+      } catch (error) {
+        console.error('Error fetching suggestions:', error);
+        setSuggestions([]);
+      }
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  // Handle search submission
+  const handleSearch = async (query = searchQuery) => {
+    if (!query || query.trim().length === 0) return;
+
+    setIsSearching(true);
+    setShowSuggestions(false);
+
+    try {
+      const response = await searchItems(query.trim());
+      if (response.success) {
+        const results = response.data.results;
+        setSearchResults(results);
+        
+        // Log results to console as requested
+        console.log('Search Results:', {
+          query: query,
+          totalResults: results.length,
+          productCount: response.data.productCount,
+          supplierListingCount: response.data.supplierListingCount,
+          results: results
+        });
+
+        // Navigate to search results page
+        navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      alert('Search failed. Please try again.');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Handle form submission
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    handleSearch();
+  };
+
+  // Handle suggestion click
+  const handleSuggestionClick = (suggestion) => {
+    setSearchQuery(suggestion);
+    setShowSuggestions(false);
+    handleSearch(suggestion);
+  };
+
+  // Handle click outside to close suggestions
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        searchRef.current && 
+        !searchRef.current.contains(event.target) &&
+        suggestionsRef.current && 
+        !suggestionsRef.current.contains(event.target)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <nav className="bg-white shadow-lg sticky top-0 z-50">
@@ -41,13 +132,45 @@ const Navbar = () => {
 
           {/* Search Bar - Hidden on mobile */}
           <div className="hidden md:flex flex-1 max-w-md mx-8">
-            <div className="relative w-full">
-              <input
-                type="text"
-                placeholder="Search for products..."
-                className="w-full px-4 py-2 pl-10 pr-4 text-gray-700 bg-gray-100 border border-gray-300 rounded-full focus:outline-none focus:border-[#782355] focus:ring-1 focus:ring-[#782355]"
-              />
-              <MagnifyingGlassIcon className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            <div className="relative w-full" ref={searchRef}>
+              <form onSubmit={handleSearchSubmit}>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={handleSearchInputChange}
+                  placeholder="Search for products..."
+                  className="w-full px-4 py-2 pl-10 pr-4 text-gray-700 bg-gray-100 border border-gray-300 rounded-full focus:outline-none focus:border-[#782355] focus:ring-1 focus:ring-[#782355]"
+                  disabled={isSearching}
+                />
+                <button 
+                  type="submit" 
+                  className="absolute left-3 top-2.5 h-5 w-5 text-gray-400 hover:text-[#782355] transition-colors"
+                  disabled={isSearching}
+                >
+                  <MagnifyingGlassIcon className={`h-5 w-5 ${isSearching ? 'animate-pulse' : ''}`} />
+                </button>
+              </form>
+              
+              {/* Search Suggestions Dropdown */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div 
+                  ref={suggestionsRef}
+                  className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto"
+                >
+                  {suggestions.map((suggestion, index) => (
+                    <div
+                      key={index}
+                      onClick={() => handleSuggestionClick(suggestion)}
+                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 border-b border-gray-100 last:border-b-0"
+                    >
+                      <div className="flex items-center">
+                        <MagnifyingGlassIcon className="h-4 w-4 text-gray-400 mr-2" />
+                        {suggestion}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -91,12 +214,41 @@ const Navbar = () => {
         {/* Mobile Search Bar */}
         <div className="md:hidden pb-3">
           <div className="relative">
-            <input
-              type="text"
-              placeholder="Search for products..."
-              className="w-full px-4 py-2 pl-10 pr-4 text-gray-700 bg-gray-100 border border-gray-300 rounded-full focus:outline-none focus:border-[#782355] focus:ring-1 focus:ring-[#782355]"
-            />
-            <MagnifyingGlassIcon className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            <form onSubmit={handleSearchSubmit}>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={handleSearchInputChange}
+                placeholder="Search for products..."
+                className="w-full px-4 py-2 pl-10 pr-4 text-gray-700 bg-gray-100 border border-gray-300 rounded-full focus:outline-none focus:border-[#782355] focus:ring-1 focus:ring-[#782355]"
+                disabled={isSearching}
+              />
+              <button 
+                type="submit" 
+                className="absolute left-3 top-2.5 h-5 w-5 text-gray-400 hover:text-[#782355] transition-colors"
+                disabled={isSearching}
+              >
+                <MagnifyingGlassIcon className={`h-5 w-5 ${isSearching ? 'animate-pulse' : ''}`} />
+              </button>
+            </form>
+            
+            {/* Mobile Search Suggestions */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                {suggestions.map((suggestion, index) => (
+                  <div
+                    key={index}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 border-b border-gray-100 last:border-b-0"
+                  >
+                    <div className="flex items-center">
+                      <MagnifyingGlassIcon className="h-4 w-4 text-gray-400 mr-2" />
+                      {suggestion}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -114,7 +266,7 @@ const Navbar = () => {
               Dashboard
             </button>
             <div className="space-y-2 pt-2">
-              { login != null ? 
+              { isAuthenticated != true ? 
                 (
                 <button onClick={() => navigate('/authpage')} className="px-4 py-2 text-[#782355] border border-[#782355] rounded-lg hover:bg-[#782355] hover:text-white transition-colors duration-200">
                   Sign In
