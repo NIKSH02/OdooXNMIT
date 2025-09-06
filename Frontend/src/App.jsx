@@ -1,5 +1,6 @@
 import React from "react";
 import { AuthProvider } from "./context/AuthContext";
+import { CartProvider } from "./context/CartContext";
 import AuthPage from "./pages/AuthPage";
 import {
   BrowserRouter as Router,
@@ -11,6 +12,10 @@ import { useAuth } from "./hooks/useAuth";
 import AllProductsPage from "./pages/AllProductsPage";
 import LandingPage from "./pages/LandingPage";
 import SearchResults from "./pages/SearchResults";
+import ProductDetailPage from "./pages/ProductDetailPage";
+import CartPage from "./pages/CartPage";
+import AddItemPage from "./pages/AddItemPage";
+import DashboardLayout from "./pages/dashboard/DashboardLayout";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -72,16 +77,30 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-              <Router>
-                <Routes>
-                  {/* Public Routes - No authentication required */}
-                  <Route path="/authpage" element={<AuthPage />} />
-                  <Route path='/' element={<LandingPage /> } />
-                  <Route path="/products" element={<AllProductsPage /> } />
-                  <Route path="/search" element={<SearchResults />} />
-                  {/* Protected Routes - Authentication required */}
-                </Routes>
-              </Router>
+        <CartProvider>
+          <Router>
+            <Routes>
+              {/* Public Routes - No authentication required */}
+              <Route path="/authpage" element={<AuthPage />} />
+              <Route path='/' element={<LandingPage />} />
+              <Route path="/products" element={<AllProductsPage />} />
+              <Route path="/product/:id" element={<ProductDetailPage />} />
+              <Route path="/cart" element={<CartPage />} />
+              
+              {/* Protected Routes - Authentication required */}
+              <Route path="/add-item" element={
+                <ProtectedRoute>
+                  <AddItemPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard/*" element={
+                <ProtectedRoute>
+                  <DashboardLayout />
+                </ProtectedRoute>
+              } />
+            </Routes>
+          </Router>
+        </CartProvider>
       </AuthProvider>
     </ErrorBoundary>
   );
