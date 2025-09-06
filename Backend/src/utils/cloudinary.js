@@ -25,37 +25,81 @@ const cloudnairyconnect = () => {
   }
 };
 
-const uploadOnCloudinary = async (localFilePath) => {
+const uploadOnCloudinary = async (fileData, fileName = null) => {
   try {
-    console.log("Uploading file to Cloudinary:", localFilePath);
+    console.log("Uploading file to Cloudinary:", fileData);
+    console.log("Type of fileData:", typeof fileData);
+    console.log("Is Buffer:", Buffer.isBuffer(fileData));
+    
     await cloudnairyconnect();
-    if (!localFilePath) {
-      throw new Error("File path is required");
+    
+    if (!fileData) {
+      throw new Error("File data is required");
     }
 
-    // Check if file exists
-    if (!fs.existsSync(localFilePath)) {
-      throw new Error(`File does not exist: ${localFilePath}`);
+    let uploadResponse;
+
+    // Check if fileData is a Buffer (from express-fileupload with useTempFiles: false)
+    if (Buffer.isBuffer(fileData)) {
+      console.log("Buffer length:", fileData.length);
+      
+      if (fileData.length === 0) {
+        throw new Error("Empty buffer provided for image upload");
+      }
+      
+      console.log("Uploading Buffer data to Cloudinary");
+      // Create a data URL for the buffer
+      const dataUrl = `data:image/png;base64,${fileData.toString('base64')}`;
+      console.log("Data URL length:", dataUrl.length);
+      
+      // Upload buffer directly to Cloudinary using the data URL
+      uploadResponse = await v2.uploader.upload(dataUrl, {
+        resource_type: "auto",
+        timeout: 30000,
+        public_id: fileName ? fileName.split('.')[0] : undefined,
+      });
+    } else if (typeof fileData === 'string') {
+      // Handle file path upload (when useTempFiles: true or direct file path)
+      console.log("Uploading file from path:", fileData);
+      
+      if (!fs.existsSync(fileData)) {
+        throw new Error(`File does not exist: ${fileData}`);
+      }
+
+      uploadResponse = await v2.uploader.upload(fileData, {
+        resource_type: "auto",
+        timeout: 30000,
+        public_id: fileName ? fileName.split('.')[0] : undefined,
+      });
+
+      // Clean up the temp file
+      try {
+        fs.unlinkSync(fileData);
+        console.log("Temp file cleaned up:", fileData);
+      } catch (cleanupError) {
+        console.error("Error cleaning up temp file:", cleanupError);
+      }
+    } else {
+      throw new Error("Invalid file data type. Expected Buffer or file path string.");
     }
 
-    const response = await v2.uploader.upload(localFilePath, {
-      resource_type: "auto",
-      timeout: 30000, // 30 second timeout for Cloudinary upload
-    });
-    console.log("file is uploaded on cloudinary", response.url);
-
-    // Clean up the temp file
-    fs.unlinkSync(localFilePath);
-    return response;
+    console.log("file is uploaded on cloudinary", uploadResponse.url);
+    return uploadResponse;
   } catch (error) {
     console.error("Error uploading file on cloudinary:", error);
-    try {
-      if (fs.existsSync(localFilePath)) {
-        fs.unlinkSync(localFilePath);
+    
+    // Only try to clean up if fileData is actually a file path (string) and not a Buffer
+    if (typeof fileData === 'string' && !Buffer.isBuffer(fileData)) {
+      try {
+        if (fs.existsSync(fileData)) {
+          fs.unlinkSync(fileData);
+          console.log("Temp file cleaned up after error:", fileData);
+        }
+      } catch (cleanupError) {
+        console.error("Error cleaning up file:", cleanupError);
       }
-    } catch (cleanupError) {
-      console.error("Error cleaning up file:", cleanupError);
     }
+    
     return null;
   }
 };

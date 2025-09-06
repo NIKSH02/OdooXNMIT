@@ -104,7 +104,11 @@ export const CartProvider = ({ children }) => {
         quantity,
         seller: typeof product.seller === 'object' ? product.seller.name : product.seller,
         condition: product.condition,
-        location: product.location,
+        location: typeof product.location === 'object' && product.location?.address 
+          ? product.location.address 
+          : typeof product.location === 'string' 
+          ? product.location 
+          : 'Location not specified',
         inStock: product.inStock !== false,
       },
     });

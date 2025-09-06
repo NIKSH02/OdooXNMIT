@@ -59,6 +59,10 @@ class ErrorBoundary extends React.Component {
     console.error("Error caught by boundary:", error, errorInfo);
   }
 
+  handleRetry = () => {
+    this.setState({ hasError: false, error: null });
+  }
+
   render() {
     if (this.state.hasError) {
       return (
@@ -68,14 +72,22 @@ class ErrorBoundary extends React.Component {
               Something went wrong
             </h1>
             <p className="text-gray-600 mb-4">
-              Please refresh the page to try again.
+              Please try again or refresh the page if the problem persists.
             </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
-            >
-              Refresh Page
-            </button>
+            <div className="space-x-4">
+              <button
+                onClick={this.handleRetry}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+              >
+                Refresh Page
+              </button>
+            </div>
           </div>
         </div>
       );

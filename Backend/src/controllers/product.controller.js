@@ -90,14 +90,30 @@ const createProduct = asyncHandler(async (req, res) => {
     let imageDetails = [];
 
     if (req.files && req.files.images) {
+      console.log("Files received:", Object.keys(req.files));
+      console.log("Images:", req.files.images);
+      
       const images = Array.isArray(req.files.images)
         ? req.files.images
         : [req.files.images];
 
+      console.log("Processing", images.length, "images");
+      images.forEach((image, index) => {
+        console.log(`Image ${index}:`, {
+          name: image.name,
+          size: image.size,
+          mimetype: image.mimetype,
+          dataLength: image.data ? image.data.length : 'undefined',
+          tempFilePath: image.tempFilePath || 'undefined'
+        });
+      });
+
       // Upload images to Cloudinary
-      const cloudinaryPromises = images.map((image) =>
-        uploadOnCloudinary(image.data, image.name)
-      );
+      // Use tempFilePath when useTempFiles is true, otherwise use data buffer
+      const cloudinaryPromises = images.map((image) => {
+        const fileSource = image.tempFilePath || image.data;
+        return uploadOnCloudinary(fileSource, image.name);
+      });
       const cloudinaryResponses = await Promise.all(cloudinaryPromises);
 
       imageUrls = cloudinaryResponses.map((response) => response.secure_url);

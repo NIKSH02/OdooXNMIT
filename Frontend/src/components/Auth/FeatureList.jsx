@@ -2,28 +2,28 @@ import { FaHandshake, FaBoxOpen, FaMapMarkerAlt, FaShieldAlt } from "react-icons
 
 const features = [
   {
-    icon: <FaHandshake size={22} className="text-orange-600" />,
-    title: "Direct Vendor Connect",
+    icon: <FaHandshake size={22} className="text-[#782355]" />,
+    title: "Seamless Buyer-Seller Connection",
     description:
-      "Connect directly with verified suppliers and vendors. Build lasting business relationships with transparent communication and reliable partnerships.",
+      "EcoFinds empowers users to easily register, log in, and connect directly with others to buy or sell second-hand items, fostering a sustainable and trusted community.",
   },
   {
-    icon: <FaBoxOpen size={22} className="text-orange-600" />,
-    title: "Sample Before Purchase",
+    icon: <FaBoxOpen size={22} className="text-[#782355]" />,
+    title: "Clear Product Previews",
     description:
-      "Request samples from suppliers before making bulk orders. Ensure quality and compatibility with your requirements risk-free.",
+      "Create and manage detailed product listings with a title, description, category, price, and images—helping buyers make informed choices before contacting sellers.",
   },
   {
-    icon: <FaMapMarkerAlt size={22} className="text-orange-600" />,
-    title: "Local & Global Reach",
+    icon: <FaMapMarkerAlt size={22} className="text-[#782355]" />,
+    title: "Effortless Search & Discovery",
     description:
-      "Find suppliers near you or expand globally. Location-based search helps you discover the best vendors in your area or worldwide.",
+      "Find second-hand products quickly using intuitive filtering and search features, whether you’re browsing locally or globally, promoting responsible consumption.",
   },
   {
-    icon: <FaShieldAlt size={22} className="text-orange-600" />,
-    title: "Secure Transactions",
+    icon: <FaShieldAlt size={22} className="text-[#782355]" />,
+    title: "Secure and Stable Experience",
     description:
-      "Trade with confidence using our secure platform. Verified vendors, transparent pricing, and protected transactions ensure your business safety.",
+      "EcoFinds ensures a stable platform with efficient data management, secure authentication, and reliable product listings—providing a smooth and safe environment for sustainable trading.",
   },
 ];
 

@@ -61,26 +61,7 @@ const DashboardSidebar = ({ user, onLogout }) => {
   return (
     <div className="w-64 bg-white shadow-lg h-screen overflow-y-auto">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center gap-3 mb-4">
-          {/* <div className="w-12 h-12 bg-gradient-to-r from-[#782355] to-purple-600 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-lg">E</span>
-          </div> */}
-          <div>
-            <h2 className="text-xl font-bold text-[#782355]">EcoFinds</h2>
-            <p className="text-sm text-gray-500">Dashboard</p>
-          </div>
-        </div>
-        
-        {/* Back to Home */}
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center gap-2 text-gray-600 hover:text-[#782355] transition-colors duration-200"
-        >
-          <ChevronLeftIcon className="h-4 w-4" />
-          <span className="text-sm">Back to Home</span>
-        </button>
-      </div>
+    
 
       {/* Navigation Menu */}
       <nav className="p-4">
